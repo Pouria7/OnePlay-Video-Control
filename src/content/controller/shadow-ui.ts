@@ -363,9 +363,9 @@ export function createShadowUI(): ShadowUIElements {
     }
 
     .ufvc-volume-slider {
-      writing-mode: bt-lr; /* IE/Edge */
-      -webkit-appearance: slider-vertical;
-      width: 6px;
+      writing-mode: vertical-lr;
+      direction: rtl;
+      width: 14px;
       height: 74px;
       accent-color: var(--ufvc-accent, #38bdf8);
       cursor: pointer;
@@ -488,7 +488,7 @@ export function createShadowUI(): ShadowUIElements {
           <span class="ufvc-icon-vol-mute" style="display:none;">${ICONS.volumeMute}</span>
         </button>
         <div class="ufvc-volume-slider-box">
-          <input type="range" class="ufvc-volume-slider" min="0" max="1" step="0.05" value="1" orient="vertical" title="Volume (Up/Down Arrow)">
+          <input type="range" class="ufvc-volume-slider" min="0" max="1" step="0.05" value="1" title="Volume (Up/Down Arrow)">
         </div>
       </div>
 
