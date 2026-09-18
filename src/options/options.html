@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Universal Floating Video Controls - Settings</title>
+  <link rel="stylesheet" href="./options.css">
+</head>
+<body>
+  <div class="dashboard-layout">
+    <!-- Sidebar Navigation -->
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-icon">
+          <svg viewBox="0 0 24 24" fill="currentColor" width="22" height="22">
+            <path d="M8 5v14l11-7z"/>
+          </svg>
+        </div>
+        <div>
+          <h2 class="brand-title">Floating Controls</h2>
+          <span class="brand-subtitle">Extension Preferences</span>
+        </div>
+      </div>
+
+      <nav class="nav-links">
+        <a href="#general" class="nav-item active" data-tab="general">
+          <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
+          General Settings
+        </a>
+        <a href="#sites" class="nav-item" data-tab="sites">
+          <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
+          Configured Sites
+        </a>
+        <a href="#theme-builder" class="nav-item" data-tab="theme-builder">
+          <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M12 3c-4.97 0-9 4.03-9 9 0 2.12.74 4.07 1.97 5.61L4.35 19.4c-.39.39-.39 1.02 0 1.41.39.39 1.02.39 1.41 0l1.9-1.9C9.28 19.59 10.59 20 12 20c4.97 0 9-4.03 9-9s-4.03-9-9-9zm0 15c-1.12 0-2.17-.32-3.07-.86l2.36-2.36c.39-.39.39-1.02 0-1.41-.39-.39-1.02-.39-1.41 0l-2.36 2.36C6.98 14.83 6.66 13.78 6.66 12.66c0-2.95 2.39-5.34 5.34-5.34s5.34 2.39 5.34 5.34-2.39 5.34-5.34 5.34z"/></svg>
+          Theme Builder
+        </a>
+      </nav>
+
+      <div class="sidebar-footer">
+        <span class="version-label" id="optVersion">Version 1.0.0</span>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <!-- Section 1: General Settings -->
+      <section id="section-general" class="content-section active">
+        <header class="section-header">
+          <h1 class="page-title">General Settings</h1>
+          <p class="page-desc">Manage universal extension behavior and detection policies.</p>
+        </header>
+
+        <div class="settings-card">
+          <div class="setting-item">
+            <div class="setting-text">
+              <label class="setting-title">Master Extension Switch</label>
+              <p class="setting-sub">Enable or disable floating video controls globally.</p>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" id="optGlobalEnabled" checked>
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+
+          <div class="setting-divider"></div>
+
+          <div class="setting-item">
+            <div class="setting-text">
+              <label class="setting-title">Default Website Injection Policy</label>
+              <p class="setting-sub">Controls how new or unconfigured websites are handled.</p>
+            </div>
+            <div class="policy-selector">
+              <label class="policy-card">
+                <input type="radio" name="sitePolicy" value="universal" checked id="policyUniversal">
+                <div class="policy-box">
+                  <span class="policy-name">Universal Mode (Default)</span>
+                  <span class="policy-desc">Show floating controls on any website with video.</span>
+                </div>
+              </label>
+              <label class="policy-card">
+                <input type="radio" name="sitePolicy" value="selective" id="policySelective">
+                <div class="policy-box">
+                  <span class="policy-name">Selective / Whitelist Mode</span>
+                  <span class="policy-desc">Only activate controls on domains explicitly added below.</span>
+                </div>
+              </label>
+            </div>
+          </div>
+
+          <div class="setting-divider"></div>
+
+          <div class="setting-item">
+            <div class="setting-text">
+              <label class="setting-title">Default Theme</label>
+              <p class="setting-sub">The default theme applied when no per-site theme is chosen.</p>
+            </div>
+            <select id="optDefaultTheme" class="dashboard-select">
+              <option value="minimal">Minimal (Default)</option>
+              <option value="minimal-dark">Minimal Dark</option>
+              <option value="glass">Glassmorphism</option>
+              <option value="accent-blue">Accent Blue</option>
+            </select>
+          </div>
+
+          <div class="setting-divider"></div>
+
+          <div class="setting-item">
+            <div class="setting-text">
+              <label class="setting-title">Controller Docking Position</label>
+              <p class="setting-sub">Where the floating controller appears relative to the video frame.</p>
+            </div>
+            <select id="optDefaultPosition" class="dashboard-select">
+              <option value="bottom-inside">Bottom (Inside Video Frame)</option>
+              <option value="bottom-outside">Bottom (Outside Video Frame)</option>
+              <option value="top-inside">Top (Inside Video Frame)</option>
+              <option value="top-outside">Top (Outside Video Frame)</option>
+            </select>
+          </div>
+
+          <div class="setting-divider"></div>
+
+          <div class="setting-item">
+            <div class="setting-text">
+              <label class="setting-title">Controls Layout Density</label>
+              <p class="setting-sub">Choose between full playback tools or a minimal setup (Play, Seek, Timeline).</p>
+            </div>
+            <select id="optDefaultLayout" class="dashboard-select">
+              <option value="full">Full Controls (All playback tools)</option>
+              <option value="minimal">Minimal Controls (Play, Seek -5s, Seek +5s, Scrubber)</option>
+            </select>
+          </div>
+
+          <div class="setting-divider"></div>
+
+          <div class="setting-item">
+            <div class="setting-text">
+              <label class="setting-title">Allow Multiple Active Controllers</label>
+              <p class="setting-sub">Allows simultaneously visible videos (e.g. split screens) to each receive a controller.</p>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" id="optAllowMultiple" checked>
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+        </div>
+
+        <h2 class="sub-header">Detection Sensitivity & Playback</h2>
+        <div class="settings-card">
+          <div class="slider-row">
+            <div class="slider-info">
+              <span class="slider-title">Minimum Video Size Threshold</span>
+              <span class="slider-val" id="valMinSize">160 × 120 px</span>
+            </div>
+            <input type="range" id="optMinWidth" min="100" max="360" step="10" value="160" class="dashboard-slider">
+          </div>
+
+          <div class="setting-divider"></div>
+
+          <div class="slider-row">
+            <div class="slider-info">
+              <span class="slider-title">Viewport Visibility Threshold</span>
+              <span class="slider-val" id="valVisibility">70%</span>
+            </div>
+            <input type="range" id="optVisibility" min="20" max="100" step="5" value="70" class="dashboard-slider">
+          </div>
+
+          <div class="setting-divider"></div>
+
+          <div class="slider-row">
+            <div class="slider-info">
+              <span class="slider-title">Keyboard Seek Interval</span>
+              <span class="slider-val" id="valSeek">5 seconds</span>
+            </div>
+            <input type="range" id="optSeek" min="1" max="30" step="1" value="5" class="dashboard-slider">
+          </div>
+
+          <div class="setting-divider"></div>
+
+          <div class="slider-row">
+            <div class="slider-info">
+              <span class="slider-title">Controller Auto-Hide Delay</span>
+              <span class="slider-val" id="valAutoHide">2.2 seconds</span>
+            </div>
+            <input type="range" id="optAutoHide" min="1000" max="5000" step="200" value="2200" class="dashboard-slider">
+          </div>
+        </div>
+      </section>
+
+      <!-- Section 2: Configured Sites -->
+      <section id="section-sites" class="content-section">
+        <header class="section-header">
+          <h1 class="page-title">Configured Sites & Domains</h1>
+          <p class="page-desc">Customize or override video controls behavior for specific websites.</p>
+        </header>
+
+        <div class="sites-toolbar">
+          <input type="text" id="siteSearchInput" placeholder="Search domain..." class="search-input">
+          <div class="add-site-form">
+            <input type="text" id="newDomainInput" placeholder="e.g. vimeo.com or twitch.tv" class="domain-input">
+            <button id="addSiteBtn" class="btn-primary">Add Domain</button>
+          </div>
+        </div>
+
+        <div class="sites-table-card">
+          <table class="sites-table">
+            <thead>
+              <tr>
+                <th>Domain</th>
+                <th>Adapter Type</th>
+                <th>Enabled</th>
+                <th>Theme</th>
+                <th>Position</th>
+                <th>Layout</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="sitesTableBody">
+              <!-- Rendered dynamically -->
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Section 3: Theme Builder -->
+      <section id="section-theme-builder" class="content-section">
+        <header class="section-header">
+          <h1 class="page-title">Visual Theme Builder</h1>
+          <p class="page-desc">Design custom floating controller themes and preview changes in real time.</p>
+        </header>
+
+        <div class="theme-builder-grid">
+          <!-- Controls Panel -->
+          <div class="builder-panel settings-card">
+            <div class="builder-field">
+              <label class="field-label">Theme Preset / Select</label>
+              <select id="builderThemeSelect" class="dashboard-select">
+                <option value="new">+ Create New Custom Theme</option>
+              </select>
+            </div>
+
+            <div class="builder-field">
+              <label class="field-label">Theme Name</label>
+              <input type="text" id="builderThemeName" placeholder="My Custom Theme" class="text-input">
+            </div>
+
+            <div class="color-grid">
+              <div class="color-item">
+                <span class="color-label">Background</span>
+                <input type="color" id="builderBgColor" value="#121418">
+              </div>
+              <div class="color-item">
+                <span class="color-label">Text & Icons</span>
+                <input type="color" id="builderTextColor" value="#f3f4f6">
+              </div>
+              <div class="color-item">
+                <span class="color-label">Accent Highlight</span>
+                <input type="color" id="builderAccentColor" value="#38bdf8">
+              </div>
+              <div class="color-item">
+                <span class="color-label">Border Color</span>
+                <input type="color" id="builderBorderColor" value="#374151">
+              </div>
+            </div>
+
+            <div class="slider-row">
+              <div class="slider-info">
+                <span class="slider-title">Background Opacity</span>
+                <span class="slider-val" id="valBuilderOpacity">85%</span>
+              </div>
+              <input type="range" id="builderOpacity" min="20" max="100" value="85" class="dashboard-slider">
+            </div>
+
+            <div class="slider-row">
+              <div class="slider-info">
+                <span class="slider-title">Backdrop Blur</span>
+                <span class="slider-val" id="valBuilderBlur">12px</span>
+              </div>
+              <input type="range" id="builderBlur" min="0" max="30" value="12" class="dashboard-slider">
+            </div>
+
+            <div class="slider-row">
+              <div class="slider-info">
+                <span class="slider-title">Border Radius</span>
+                <span class="slider-val" id="valBuilderRadius">12px</span>
+              </div>
+              <input type="range" id="builderRadius" min="2" max="24" value="12" class="dashboard-slider">
+            </div>
+
+            <div class="slider-row">
+              <div class="slider-info">
+                <span class="slider-title">Controller Scale</span>
+                <span class="slider-val" id="valBuilderScale">1.0x</span>
+              </div>
+              <input type="range" id="builderScale" min="80" max="125" value="100" class="dashboard-slider">
+            </div>
+
+            <div class="builder-actions">
+              <button id="saveThemeBtn" class="btn-primary">Save Theme</button>
+              <button id="deleteThemeBtn" class="btn-danger" style="display:none;">Delete Theme</button>
+            </div>
+          </div>
+
+          <!-- Live Preview Panel -->
+          <div class="preview-panel">
+            <div class="preview-header-bar">
+              <h3 class="preview-title">Live Controller Preview</h3>
+              <div class="preview-controls-row">
+                <select id="mockPositionSelect" class="dashboard-select preview-mini-select" title="Preview Docking Position">
+                  <option value="bottom-inside">Bottom (Inside)</option>
+                  <option value="bottom-outside">Bottom (Outside)</option>
+                  <option value="top-inside">Top (Inside)</option>
+                  <option value="top-outside">Top (Outside)</option>
+                </select>
+                <select id="mockLayoutSelect" class="dashboard-select preview-mini-select" title="Preview Layout Mode">
+                  <option value="full">Full Layout</option>
+                  <option value="minimal">Minimal Layout</option>
+                </select>
+                <select id="mockWidthSelect" class="dashboard-select preview-mini-select" title="Simulate Width">
+                  <option value="normal">Normal (380px)</option>
+                  <option value="narrow">Narrow 2-Row (280px)</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="mock-video-container" id="mockVideoContainer">
+              <div class="mock-video-bg">
+                <div class="mock-play-indicator">▶ Preview Video</div>
+              </div>
+
+              <!-- Interactive Mock Floating Controller Bar -->
+              <div class="mock-floating-host" id="mockControllerHost">
+                <div class="mock-ufvc-bar" id="mockBar">
+                  <div class="mock-row-top">
+                    <div class="mock-progress-container">
+                      <div class="mock-progress-track">
+                        <div class="mock-buffer-bar" style="width: 65%;"></div>
+                        <div class="mock-progress-bar" style="width: 30%;"></div>
+                      </div>
+                      <div class="mock-scrub-thumb" style="left: 30%;"></div>
+                    </div>
+                    <div class="mock-time">0:45 / 2:30</div>
+                  </div>
+
+                  <div class="mock-row-bottom">
+                    <button class="mock-btn" id="mockPlayBtn" title="Play/Pause">
+                      <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><path d="M8 5v14l11-7z"/></svg>
+                    </button>
+                    <button class="mock-btn" id="mockSeekBackBtn" title="Seek -5s">
+                      <svg viewBox="0 0 24 24" fill="currentColor" width="15" height="15"><path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/><text x="12" y="15.5" font-size="7.5" font-weight="700" font-family="sans-serif" text-anchor="middle" fill="currentColor">5</text></svg>
+                    </button>
+                    <button class="mock-btn" id="mockSeekForwardBtn" title="Seek +5s">
+                      <svg viewBox="0 0 24 24" fill="currentColor" width="15" height="15"><path d="M12 5V1l5 5-5 5V7c-3.31 0-6 2.69-6 6s2.69 6 6 6 6-2.69 6-6h2c0 4.42-3.58 8-8 8s-8-3.58-8-8 3.58-8 8-8z"/><text x="12" y="15.5" font-size="7.5" font-weight="700" font-family="sans-serif" text-anchor="middle" fill="currentColor">5</text></svg>
+                    </button>
+                    <button class="mock-btn mock-extra-control" title="Volume">
+                      <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z"/></svg>
+                    </button>
+                    <button class="mock-btn mock-speed-btn mock-extra-control" title="Speed">1x</button>
+                    <button class="mock-btn mock-extra-control" title="Fullscreen">
+                      <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <p class="preview-hint">Live preview showing theme, docking position, and control density.</p>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script type="module" src="./options.js"></script>
+</body>
+</html>

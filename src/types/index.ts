@@ -1,0 +1,41 @@
+/**
+ * Core type definitions for Universal Floating Video Controls
+ */
+
+export enum VideoLifecycleState {
+  DISCOVERED = 'DISCOVERED',
+  TRACKED = 'TRACKED',
+  CANDIDATE = 'CANDIDATE',
+  ACTIVE = 'ACTIVE',
+  INACTIVE = 'INACTIVE',
+  REMOVED = 'REMOVED',
+  CLEANED = 'CLEANED'
+}
+
+export type BuiltinThemeName = 'minimal' | 'minimal-dark' | 'glass' | 'accent-blue';
+
+export interface VideoDimensions {
+  width: number;
+  height: number;
+}
+
+export interface VideoMediaState {
+  paused: boolean;
+  muted: boolean;
+  volume: number;
+  currentTime: number;
+  duration: number;
+  playbackRate: number;
+  readyState: number;
+  ended: boolean;
+}
+
+export interface VideoScoreBreakdown {
+  audibleBonus: number;
+  playingMutedBonus: number;
+  highVisibilityBonus: number;
+  visibilityScore: number;
+  dimensionScore: number;
+  adapterBonus: number;
+  total: number;
+}

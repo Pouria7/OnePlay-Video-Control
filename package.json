@@ -1,0 +1,32 @@
+{
+  "name": "universal-floating-video-controls",
+  "version": "1.0.0",
+  "description": "Universal floating video controls for HTML5 videos across the web, designed for resilient overlay-independent playback.",
+  "type": "module",
+  "scripts": {
+    "dev": "vite build --watch",
+    "generate-icons": "node scripts/generate-icons.js",
+    "prebuild": "node scripts/generate-icons.js",
+    "build": "node scripts/build.js",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "keywords": [
+    "chrome-extension",
+    "manifest-v3",
+    "video-controls",
+    "instagram",
+    "youtube",
+    "html5-video"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/chrome": "^0.0.280",
+    "@types/node": "^22.10.2",
+    "jsdom": "^25.0.1",
+    "typescript": "^5.7.2",
+    "vite": "^6.0.3",
+    "vitest": "^2.1.8"
+  }
+}
