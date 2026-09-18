@@ -39,7 +39,8 @@ export function calculateControllerPosition(
   }
 
   // Desired width: either default controller width or constrained by video width
-  const actualWidth = Math.min(controllerWidth, Math.max(200, videoRect.width - margin * 2));
+  const minAllowed = Math.min(controllerWidth, 100);
+  const actualWidth = Math.min(controllerWidth, Math.max(minAllowed, videoRect.width - margin * 2));
 
   // Center horizontally over the video
   let left = videoRect.left + (videoRect.width - actualWidth) / 2;

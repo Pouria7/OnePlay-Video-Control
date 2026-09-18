@@ -61,15 +61,27 @@ export class PositionManager {
     this.lastWidth = videoRect.width;
     this.lastHeight = videoRect.height;
 
-    // Responsive 2-row layout when video width is narrow (< 340px)
-    const isNarrow = videoRect.width < 340;
-    this.containerElement.classList.toggle('two-row', isNarrow);
-    this.containerElement.classList.toggle('minimal-mode', this.config.controlsLayout === 'minimal');
+    // Adapt layout mode and dimensions
+    const isMinimal = this.config.controlsLayout === 'minimal';
+    this.containerElement.classList.toggle('minimal-mode', isMinimal);
 
-    const controllerHeight = isNarrow ? 62 : 44;
+    let controllerWidth: number;
+    let controllerHeight: number;
+
+    if (isMinimal) {
+      this.containerElement.classList.remove('two-row');
+      controllerWidth = 136;
+      controllerHeight = 34;
+    } else {
+      const isNarrow = videoRect.width < 340;
+      this.containerElement.classList.toggle('two-row', isNarrow);
+      controllerWidth = 390;
+      controllerHeight = isNarrow ? 62 : 44;
+    }
+
     const pos: PositionCoordinates = calculateControllerPosition(
       videoRect,
-      390,
+      controllerWidth,
       controllerHeight,
       10,
       this.config.controllerPosition

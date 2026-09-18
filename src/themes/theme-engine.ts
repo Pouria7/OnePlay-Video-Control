@@ -36,16 +36,22 @@ export class ThemeEngine {
   }
 
   /**
-   * Resolves a theme by ID, falling back to minimal if not found
+   * Resolves a theme by ID, falling back to classic-dark if not found
    */
   resolveTheme(themeId: string): ThemeDefinition {
-    if (BUILTIN_THEMES[themeId]) {
-      return BUILTIN_THEMES[themeId];
+    // Backwards compatibility aliases for older settings
+    let effectiveId = themeId;
+    if (themeId === 'minimal') effectiveId = 'classic-dark';
+    if (themeId === 'minimal-dark') effectiveId = 'midnight';
+    if (themeId === 'accent-blue') effectiveId = 'ocean-blue';
+
+    if (BUILTIN_THEMES[effectiveId]) {
+      return BUILTIN_THEMES[effectiveId];
     }
-    if (this.customThemes[themeId]) {
-      return this.customThemes[themeId];
+    if (this.customThemes[effectiveId]) {
+      return this.customThemes[effectiveId];
     }
-    return BUILTIN_THEMES.minimal;
+    return BUILTIN_THEMES['classic-dark'];
   }
 
   /**

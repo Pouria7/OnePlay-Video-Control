@@ -647,14 +647,59 @@ input:checked + .toggle-slider:before {
   height: 28px;
 }
 
-/* Minimal mode in preview */
+/* Mini non-interactive progress bar (shown in minimal mode) */
+.mock-mini-progress {
+  display: none;
+}
+
+/* Minimal mode in preview: compact floating pill */
+.mock-ufvc-bar.minimal-mode {
+  position: relative;
+  width: 136px !important;
+  height: 34px !important;
+  padding: 0 6px 3px 6px;
+  justify-content: center;
+  gap: 4px;
+  overflow: hidden;
+}
+
+.mock-ufvc-bar.minimal-mode .mock-row-top,
+.mock-ufvc-bar.minimal-mode .mock-time,
+.mock-ufvc-bar.minimal-mode .mock-progress-container,
 .mock-ufvc-bar.minimal-mode .mock-extra-control {
   display: none !important;
 }
 
-.mock-ufvc-bar.two-row.minimal-mode .mock-row-bottom {
+.mock-ufvc-bar.minimal-mode .mock-row-bottom {
+  display: flex;
+  align-items: center;
   justify-content: center;
-  gap: 16px;
+  gap: 4px;
+  width: 100%;
+  height: 100%;
+}
+
+.mock-ufvc-bar.minimal-mode #mockSeekBackBtn { order: 1; }
+.mock-ufvc-bar.minimal-mode #mockPlayBtn { order: 2; }
+.mock-ufvc-bar.minimal-mode #mockSeekForwardBtn { order: 3; }
+
+.mock-ufvc-bar.minimal-mode .mock-mini-progress {
+  display: block;
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  width: 100%;
+  height: 3px;
+  background: rgba(255, 255, 255, 0.15);
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.mock-ufvc-bar.minimal-mode .mock-mini-progress-bar {
+  height: 100%;
+  width: 35%;
+  background: #38bdf8;
 }
 
 .mock-btn {

@@ -38,7 +38,7 @@ describe('ConfigPrecedence', () => {
     const config = resolveEffectiveConfig({
       domain: 'instagram.com',
       globalUserSettings: {
-        defaultTheme: 'minimal',
+        defaultTheme: 'classic-dark',
         minWidth: 140,
         visibilityThreshold: 0.8
       },
@@ -48,7 +48,7 @@ describe('ConfigPrecedence', () => {
       }
     });
 
-    expect(config.theme).toBe('minimal'); // from global user
+    expect(config.theme).toBe('classic-dark'); // from global user
     expect(config.minWidth).toBe(180); // overridden by adapter
     expect(config.visibilityThreshold).toBe(0.65); // overridden by adapter
   });
@@ -57,22 +57,22 @@ describe('ConfigPrecedence', () => {
     const config = resolveEffectiveConfig({
       domain: 'instagram.com',
       globalUserSettings: {
-        defaultTheme: 'minimal',
+        defaultTheme: 'classic-dark',
         minWidth: 140
       },
       adapterOverrides: {
-        theme: 'minimal-dark',
+        theme: 'midnight',
         minWidth: 180
       },
       userSiteSettings: {
-        theme: 'accent-blue',
+        theme: 'ocean-blue',
         minWidth: 250,
         enabled: false
       }
     });
 
     // User per-site wins on all specified fields
-    expect(config.theme).toBe('accent-blue');
+    expect(config.theme).toBe('ocean-blue');
     expect(config.minWidth).toBe(250);
     expect(config.enabled).toBe(false);
   });

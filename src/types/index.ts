@@ -12,7 +12,7 @@ export enum VideoLifecycleState {
   CLEANED = 'CLEANED'
 }
 
-export type BuiltinThemeName = 'minimal' | 'minimal-dark' | 'glass' | 'accent-blue';
+export type BuiltinThemeName = 'classic-dark' | 'midnight' | 'glass' | 'ocean-blue';
 
 export interface VideoDimensions {
   width: number;

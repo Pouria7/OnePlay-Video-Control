@@ -78,7 +78,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
 
   globalEnableToggle.checked = globalSettings.enabled;
-  globalThemeSelect.value = globalSettings.defaultTheme || 'minimal';
+  globalThemeSelect.value = globalSettings.defaultTheme || 'classic-dark';
   globalPositionSelect.value = globalSettings.controllerPosition || 'bottom-inside';
   globalLayoutSelect.value = globalSettings.controlsLayout || 'full';
 

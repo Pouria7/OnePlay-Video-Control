@@ -333,6 +333,9 @@ export class VideoController {
     const percent = `${ratio * 100}%`;
     this.ui.progressBar.style.width = percent;
     this.ui.scrubThumb.style.left = percent;
+    if (this.ui.miniProgressBar) {
+      this.ui.miniProgressBar.style.width = percent;
+    }
   }
 
   private updateBufferProgress(): void {

@@ -5,16 +5,16 @@
 import { ThemeDefinition } from './theme-types';
 
 export const BUILTIN_THEMES: Record<string, ThemeDefinition> = {
-  minimal: {
-    id: 'minimal',
-    name: 'Minimal (Default)',
+  'classic-dark': {
+    id: 'classic-dark',
+    name: 'Classic Dark (Default)',
     isBuiltin: true,
     properties: {
-      bg: 'rgba(18, 20, 24, 0.76)',
+      bg: 'rgba(18, 20, 24, 0.82)',
       text: '#f3f4f6',
-      accent: '#9ca3af',
-      accentHover: '#e5e7eb',
-      border: '1px solid rgba(255, 255, 255, 0.12)',
+      accent: '#38bdf8',
+      accentHover: '#7dd3fc',
+      border: '1px solid rgba(255, 255, 255, 0.14)',
       radius: '10px',
       blur: 'blur(8px)',
       opacity: 0.95,
@@ -22,12 +22,12 @@ export const BUILTIN_THEMES: Record<string, ThemeDefinition> = {
       scale: 1.0
     }
   },
-  'minimal-dark': {
-    id: 'minimal-dark',
-    name: 'Minimal Dark',
+  midnight: {
+    id: 'midnight',
+    name: 'Midnight OLED',
     isBuiltin: true,
     properties: {
-      bg: 'rgba(8, 8, 10, 0.92)',
+      bg: 'rgba(8, 8, 10, 0.95)',
       text: '#ffffff',
       accent: '#e2e8f0',
       accentHover: '#ffffff',
@@ -56,12 +56,12 @@ export const BUILTIN_THEMES: Record<string, ThemeDefinition> = {
       scale: 1.0
     }
   },
-  'accent-blue': {
-    id: 'accent-blue',
-    name: 'Accent Blue',
+  'ocean-blue': {
+    id: 'ocean-blue',
+    name: 'Ocean Blue',
     isBuiltin: true,
     properties: {
-      bg: 'rgba(15, 23, 42, 0.85)',
+      bg: 'rgba(15, 23, 42, 0.88)',
       text: '#f8fafc',
       accent: '#3b82f6',
       accentHover: '#60a5fa',

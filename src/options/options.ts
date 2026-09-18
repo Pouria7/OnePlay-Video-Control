@@ -70,7 +70,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       policyUniversal.checked = true;
     }
 
-    optDefaultTheme.value = g.defaultTheme || 'minimal';
+    optDefaultTheme.value = g.defaultTheme || 'classic-dark';
     optDefaultPosition.value = g.controllerPosition || 'bottom-inside';
     optDefaultLayout.value = g.controlsLayout || 'full';
     optAllowMultiple.checked = g.allowMultiple;
@@ -161,7 +161,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     if (filtered.length === 0) {
       const emptyRow = document.createElement('tr');
-      emptyRow.innerHTML = `<td colspan="5" style="text-align:center; color: var(--text-secondary); padding: 24px;">No configured sites found.</td>`;
+      emptyRow.innerHTML = `<td colspan="7" style="text-align:center; color: var(--text-secondary); padding: 24px;">No configured sites found.</td>`;
       sitesTableBody.appendChild(emptyRow);
       return;
     }
@@ -355,6 +355,11 @@ document.addEventListener('DOMContentLoaded', async () => {
       progressBar.style.backgroundColor = builderAccentColor.value;
     }
 
+    const miniProgressBar = mockBar.querySelector('.mock-mini-progress-bar') as HTMLElement;
+    if (miniProgressBar) {
+      miniProgressBar.style.backgroundColor = builderAccentColor.value;
+    }
+
     const speedBtn = mockBar.querySelector('.mock-speed-btn') as HTMLElement;
     if (speedBtn) {
       speedBtn.style.backgroundColor = builderAccentColor.value;
@@ -393,16 +398,18 @@ document.addEventListener('DOMContentLoaded', async () => {
       builderScale.value = '100';
       deleteThemeBtn.style.display = 'none';
     } else if (val.startsWith('builtin:')) {
-      const bKey = val.split(':')[1];
+      const bKey = val.split(':')[1] as BuiltinThemeName;
       const theme = BUILTIN_THEMES[bKey];
-      builderThemeName.value = `${theme.name} Copy`;
-      builderTextColor.value = '#f3f4f6';
-      builderAccentColor.value = '#38bdf8';
-      builderBorderColor.value = '#374151';
-      builderOpacity.value = '90';
-      builderBlur.value = '10';
-      builderRadius.value = '10';
-      builderScale.value = '100';
+      if (theme) {
+        builderThemeName.value = `${theme.name} Copy`;
+        builderTextColor.value = theme.textColor;
+        builderAccentColor.value = theme.accentColor;
+        builderBorderColor.value = theme.borderColor;
+        builderOpacity.value = String(Math.round(theme.opacity * 100));
+        builderBlur.value = theme.backdropBlur.replace('px', '').replace('blur(', '').replace(')', '');
+        builderRadius.value = theme.borderRadius.replace('px', '');
+        builderScale.value = String(Math.round(theme.scale * 100));
+      }
       deleteThemeBtn.style.display = 'none';
     } else if (val.startsWith('custom:')) {
       const cKey = val.split(':')[1];
@@ -501,14 +508,20 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   if (mockLayoutSelect && mockBar) {
     mockLayoutSelect.addEventListener('change', () => {
-      mockBar.classList.toggle('minimal-mode', mockLayoutSelect.value === 'minimal');
+      const isMinimal = mockLayoutSelect.value === 'minimal';
+      mockBar.classList.toggle('minimal-mode', isMinimal);
+      if (mockControllerHost) {
+        mockControllerHost.style.maxWidth = isMinimal ? '136px' : (mockWidthSelect.value === 'narrow' ? '280px' : '380px');
+      }
     });
   }
 
   if (mockWidthSelect && mockControllerHost && mockBar) {
     mockWidthSelect.addEventListener('change', () => {
       const isNarrow = mockWidthSelect.value === 'narrow';
-      mockControllerHost.style.maxWidth = isNarrow ? '280px' : '380px';
+      if (mockLayoutSelect.value !== 'minimal') {
+        mockControllerHost.style.maxWidth = isNarrow ? '280px' : '380px';
+      }
       mockBar.classList.toggle('two-row', isNarrow);
     });
   }

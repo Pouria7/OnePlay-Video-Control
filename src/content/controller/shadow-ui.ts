@@ -31,6 +31,7 @@ export interface ShadowUIElements {
   fullscreenBtn: HTMLButtonElement;
   seekBackBtn: HTMLButtonElement;
   seekForwardBtn: HTMLButtonElement;
+  miniProgressBar: HTMLElement;
 }
 
 export const ICONS = {
@@ -144,16 +145,72 @@ export function createShadowUI(): ShadowUIElements {
       order: 2;
     }
 
-    /* Minimal controls mode */
+    /* Mini non-interactive progress bar (shown in minimal mode) */
+    .ufvc-mini-progress {
+      display: none;
+    }
+
+    /* Minimal controls mode: compact floating pill */
+    .ufvc-bar.minimal-mode {
+      position: relative;
+      width: 136px;
+      height: 34px;
+      padding: 0 6px 3px 6px;
+      justify-content: center;
+      gap: 4px;
+      border-radius: var(--ufvc-radius, 10px);
+      overflow: hidden;
+    }
+
+    .ufvc-bar.minimal-mode .ufvc-row-top,
+    .ufvc-bar.minimal-mode .ufvc-time,
+    .ufvc-bar.minimal-mode .ufvc-progress-container,
     .ufvc-bar.minimal-mode .ufvc-volume-wrapper,
     .ufvc-bar.minimal-mode .ufvc-speed-wrapper,
     .ufvc-bar.minimal-mode .ufvc-fullscreen-btn {
       display: none !important;
     }
 
-    .ufvc-bar.two-row.minimal-mode .ufvc-row-bottom {
+    .ufvc-bar.minimal-mode .ufvc-row-bottom {
+      display: flex;
+      align-items: center;
       justify-content: center;
-      gap: 16px;
+      gap: 4px;
+      width: 100%;
+      height: 100%;
+    }
+
+    .ufvc-bar.minimal-mode .ufvc-btn {
+      padding: 4px 6px;
+      border-radius: 6px;
+    }
+
+    /* Button order: Seek Back (left), Play/Pause (center), Seek Forward (right) */
+    .ufvc-bar.minimal-mode .ufvc-seek-back-btn { order: 1; }
+    .ufvc-bar.minimal-mode .ufvc-play-btn { order: 2; }
+    .ufvc-bar.minimal-mode .ufvc-seek-forward-btn { order: 3; }
+
+    /* Non-interactive slim progress line underneath */
+    .ufvc-bar.minimal-mode .ufvc-mini-progress {
+      display: block;
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      width: 100%;
+      height: 3px;
+      background: rgba(255, 255, 255, 0.15);
+      pointer-events: none;
+      border-radius: 0 0 var(--ufvc-radius, 10px) var(--ufvc-radius, 10px);
+      overflow: hidden;
+    }
+
+    .ufvc-bar.minimal-mode .ufvc-mini-progress-bar {
+      height: 100%;
+      width: 0%;
+      background: var(--ufvc-accent, #38bdf8);
+      border-radius: 0 0 var(--ufvc-radius, 10px) var(--ufvc-radius, 10px);
+      transition: width 0.12s linear;
     }
 
     .ufvc-btn {
@@ -440,6 +497,10 @@ export function createShadowUI(): ShadowUIElements {
         ${ICONS.fullscreen}
       </button>
     </div>
+
+    <div class="ufvc-mini-progress">
+      <div class="ufvc-mini-progress-bar"></div>
+    </div>
   `;
 
   shadowRoot.appendChild(container);
@@ -469,6 +530,7 @@ export function createShadowUI(): ShadowUIElements {
     speedMenu: container.querySelector('.ufvc-speed-menu') as HTMLElement,
     fullscreenBtn: container.querySelector('.ufvc-fullscreen-btn') as HTMLButtonElement,
     seekBackBtn: container.querySelector('.ufvc-seek-back-btn') as HTMLButtonElement,
-    seekForwardBtn: container.querySelector('.ufvc-seek-forward-btn') as HTMLButtonElement
+    seekForwardBtn: container.querySelector('.ufvc-seek-forward-btn') as HTMLButtonElement,
+    miniProgressBar: container.querySelector('.ufvc-mini-progress-bar') as HTMLElement
   };
 }

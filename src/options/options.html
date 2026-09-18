@@ -96,10 +96,10 @@
               <p class="setting-sub">The default theme applied when no per-site theme is chosen.</p>
             </div>
             <select id="optDefaultTheme" class="dashboard-select">
-              <option value="minimal">Minimal (Default)</option>
-              <option value="minimal-dark">Minimal Dark</option>
+              <option value="classic-dark">Classic Dark (Default)</option>
+              <option value="midnight">Midnight OLED</option>
               <option value="glass">Glassmorphism</option>
-              <option value="accent-blue">Accent Blue</option>
+              <option value="ocean-blue">Ocean Blue</option>
             </select>
           </div>
 
@@ -123,11 +123,11 @@
           <div class="setting-item">
             <div class="setting-text">
               <label class="setting-title">Controls Layout Density</label>
-              <p class="setting-sub">Choose between full playback tools or a minimal setup (Play, Seek, Timeline).</p>
+              <p class="setting-sub">Choose between full playback tools or a compact minimal pill (Play, Seek, Slim Progress).</p>
             </div>
             <select id="optDefaultLayout" class="dashboard-select">
               <option value="full">Full Controls (All playback tools)</option>
-              <option value="minimal">Minimal Controls (Play, Seek -5s, Seek +5s, Scrubber)</option>
+              <option value="minimal">Minimal Controls (Compact Pill: Seek -5s, Play, Seek +5s, Progress Line)</option>
             </select>
           </div>
 
@@ -331,6 +331,9 @@
               <!-- Interactive Mock Floating Controller Bar -->
               <div class="mock-floating-host" id="mockControllerHost">
                 <div class="mock-ufvc-bar" id="mockBar">
+                  <div class="mock-mini-progress">
+                    <div class="mock-mini-progress-bar" style="width: 30%;"></div>
+                  </div>
                   <div class="mock-row-top">
                     <div class="mock-progress-container">
                       <div class="mock-progress-track">

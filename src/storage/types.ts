@@ -70,7 +70,7 @@ export interface ResolvedConfig {
 export const DEFAULT_GLOBAL_SETTINGS: GlobalSettings = {
   enabled: true,
   defaultSitePolicy: 'universal',
-  defaultTheme: 'minimal',
+  defaultTheme: 'classic-dark',
   controllerPosition: 'bottom-inside',
   controlsLayout: 'full',
   minWidth: 160,
