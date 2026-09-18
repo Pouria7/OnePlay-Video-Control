@@ -2,12 +2,22 @@
  * Configuration and storage data schemas
  */
 
-import { BuiltinThemeName } from '../types';
+import { BuiltinThemeName, ShortcutsConfig } from '../types';
 
 export type DefaultSitePolicy = 'universal' | 'selective';
 
 export type ControllerPosition = 'bottom-inside' | 'bottom-outside' | 'top-inside' | 'top-outside';
 export type ControlsLayout = 'full' | 'minimal';
+
+export const DEFAULT_SHORTCUTS: ShortcutsConfig = {
+  togglePlay: 'Space',
+  seekBackward: 'ArrowLeft',
+  seekForward: 'ArrowRight',
+  volumeUp: 'ArrowUp',
+  volumeDown: 'ArrowDown',
+  toggleMute: 'KeyM',
+  toggleFullscreen: 'KeyF'
+};
 
 export interface GlobalSettings {
   enabled: boolean;
@@ -21,6 +31,7 @@ export interface GlobalSettings {
   seekInterval: number;
   allowMultiple: boolean;
   autoHideDelay: number;
+  shortcuts: ShortcutsConfig;
 }
 
 export interface SiteSettings {
@@ -65,6 +76,7 @@ export interface ResolvedConfig {
   seekInterval: number;
   allowMultiple: boolean;
   autoHideDelay: number;
+  shortcuts: ShortcutsConfig;
 }
 
 export const DEFAULT_GLOBAL_SETTINGS: GlobalSettings = {
@@ -78,5 +90,6 @@ export const DEFAULT_GLOBAL_SETTINGS: GlobalSettings = {
   visibilityThreshold: 0.7,
   seekInterval: 5,
   allowMultiple: true,
-  autoHideDelay: 2200
+  autoHideDelay: 2200,
+  shortcuts: DEFAULT_SHORTCUTS
 };

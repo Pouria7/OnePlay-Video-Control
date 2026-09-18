@@ -4,9 +4,11 @@
 
 import { storageManager } from '../storage/storage-manager';
 import { BUILTIN_THEMES } from '../themes/default-themes';
-import { CustomThemeDefinition, DefaultSitePolicy, StorageSchema } from '../storage/types';
+import { CustomThemeDefinition, DEFAULT_SHORTCUTS, DefaultSitePolicy, StorageSchema } from '../storage/types';
+import { BuiltinThemeName, ShortcutAction, ShortcutsConfig } from '../types';
 import { normalizeDomain } from '../utils/url';
 import { adapterManager } from '../content/adapters/adapter-manager';
+import { eventToShortcutString, formatShortcutForDisplay } from '../utils/shortcuts';
 
 document.addEventListener('DOMContentLoaded', async () => {
   // Navigation Tabs
@@ -523,6 +525,107 @@ document.addEventListener('DOMContentLoaded', async () => {
         mockControllerHost.style.maxWidth = isNarrow ? '280px' : '380px';
       }
       mockBar.classList.toggle('two-row', isNarrow);
+    });
+  }
+
+  // --- Keyboard Shortcuts Manager & Recorder ---
+  let shortcuts: ShortcutsConfig = {
+    ...DEFAULT_SHORTCUTS,
+    ...(storageData.globalSettings.shortcuts || {})
+  };
+
+  const actionKeys: ShortcutAction[] = [
+    'togglePlay',
+    'seekBackward',
+    'seekForward',
+    'volumeUp',
+    'volumeDown',
+    'toggleMute',
+    'toggleFullscreen'
+  ];
+
+  function renderShortcutsUI() {
+    actionKeys.forEach((action) => {
+      const btn = document.getElementById(`scBtn-${action}`) as HTMLButtonElement;
+      if (btn) {
+        btn.textContent = formatShortcutForDisplay(shortcuts[action]);
+        btn.classList.remove('recording');
+      }
+    });
+  }
+  renderShortcutsUI();
+
+  let activeRecordingAction: ShortcutAction | null = null;
+  let keydownRecordingHandler: ((e: KeyboardEvent) => void) | null = null;
+
+  function stopRecording() {
+    if (keydownRecordingHandler) {
+      window.removeEventListener('keydown', keydownRecordingHandler, true);
+      keydownRecordingHandler = null;
+    }
+    activeRecordingAction = null;
+    renderShortcutsUI();
+  }
+
+  actionKeys.forEach((action) => {
+    const btn = document.getElementById(`scBtn-${action}`) as HTMLButtonElement;
+    if (!btn) return;
+
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+
+      // If already recording this action, cancel
+      if (activeRecordingAction === action) {
+        stopRecording();
+        return;
+      }
+
+      // Stop any previous recording
+      stopRecording();
+
+      activeRecordingAction = action;
+      btn.classList.add('recording');
+      btn.textContent = 'Press keys...';
+
+      keydownRecordingHandler = async (evt: KeyboardEvent) => {
+        evt.preventDefault();
+        evt.stopPropagation();
+
+        if (evt.key === 'Escape') {
+          stopRecording();
+          return;
+        }
+
+        // If user is currently pressing modifier keys, preview held modifiers
+        if (['Control', 'Shift', 'Alt', 'Meta'].includes(evt.key)) {
+          const parts: string[] = [];
+          if (evt.ctrlKey) parts.push('Ctrl');
+          if (evt.altKey) parts.push('Alt');
+          if (evt.shiftKey) parts.push('Shift');
+          if (evt.metaKey) parts.push('Cmd');
+          btn.textContent = parts.length > 0 ? `${parts.join(' + ')} + ...` : 'Press keys...';
+          return;
+        }
+
+        // Full key combo captured
+        const combo = eventToShortcutString(evt);
+        if (!combo) return;
+
+        shortcuts[action] = combo;
+        await storageManager.setGlobalSettings({ shortcuts });
+        stopRecording();
+      };
+
+      window.addEventListener('keydown', keydownRecordingHandler, true);
+    });
+  });
+
+  const resetShortcutsBtn = document.getElementById('resetShortcutsBtn') as HTMLButtonElement;
+  if (resetShortcutsBtn) {
+    resetShortcutsBtn.addEventListener('click', async () => {
+      shortcuts = { ...DEFAULT_SHORTCUTS };
+      await storageManager.setGlobalSettings({ shortcuts });
+      stopRecording();
     });
   }
 });

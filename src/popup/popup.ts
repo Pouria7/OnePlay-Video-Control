@@ -3,7 +3,9 @@
  */
 
 import { storageManager } from '../storage/storage-manager';
+import { DEFAULT_SHORTCUTS } from '../storage/types';
 import { getDomainFromUrl } from '../utils/url';
+import { formatShortcutForDisplay } from '../utils/shortcuts';
 
 document.addEventListener('DOMContentLoaded', async () => {
   const versionBadge = document.getElementById('versionBadge') as HTMLElement;
@@ -86,6 +88,18 @@ document.addEventListener('DOMContentLoaded', async () => {
   siteThemeSelect.value = siteSettings.theme || '';
   sitePositionSelect.value = siteSettings.controllerPosition || '';
   siteLayoutSelect.value = siteSettings.controlsLayout || '';
+
+  // Render Shortcuts Cheatsheet values
+  const popScPlay = document.getElementById('popScPlay');
+  const popScSeek = document.getElementById('popScSeek');
+  const popScVol = document.getElementById('popScVol');
+  const popScMute = document.getElementById('popScMute');
+  const shortcuts = globalSettings.shortcuts || DEFAULT_SHORTCUTS;
+
+  if (popScPlay) popScPlay.textContent = formatShortcutForDisplay(shortcuts.togglePlay);
+  if (popScSeek) popScSeek.textContent = `${formatShortcutForDisplay(shortcuts.seekBackward)} / ${formatShortcutForDisplay(shortcuts.seekForward)}`;
+  if (popScVol) popScVol.textContent = `${formatShortcutForDisplay(shortcuts.volumeUp)} / ${formatShortcutForDisplay(shortcuts.volumeDown)}`;
+  if (popScMute) popScMute.textContent = formatShortcutForDisplay(shortcuts.toggleMute);
 
   // Query content script for live status
   if (activeTabId) {

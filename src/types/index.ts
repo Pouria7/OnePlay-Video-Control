@@ -39,3 +39,22 @@ export interface VideoScoreBreakdown {
   adapterBonus: number;
   total: number;
 }
+
+export type ShortcutAction =
+  | 'togglePlay'
+  | 'seekBackward'
+  | 'seekForward'
+  | 'volumeUp'
+  | 'volumeDown'
+  | 'toggleMute'
+  | 'toggleFullscreen';
+
+export interface ShortcutsConfig {
+  togglePlay: string;
+  seekBackward: string;
+  seekForward: string;
+  volumeUp: string;
+  volumeDown: string;
+  toggleMute: string;
+  toggleFullscreen: string;
+}

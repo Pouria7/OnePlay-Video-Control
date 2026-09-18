@@ -399,6 +399,16 @@ export function createShadowUI(): ShadowUIElements {
       backdrop-filter: blur(8px);
       -webkit-backdrop-filter: blur(8px);
       z-index: 10;
+      max-height: 210px;
+      overflow-y: auto;
+    }
+
+    .ufvc-speed-menu::-webkit-scrollbar {
+      width: 4px;
+    }
+    .ufvc-speed-menu::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.3);
+      border-radius: 2px;
     }
 
     .ufvc-speed-menu.open {
@@ -486,10 +496,14 @@ export function createShadowUI(): ShadowUIElements {
         <button class="ufvc-btn ufvc-speed-btn" title="Playback Speed">1x</button>
         <div class="ufvc-speed-menu">
           <button class="ufvc-speed-item" data-speed="0.5">0.5x</button>
+          <button class="ufvc-speed-item" data-speed="0.75">0.75x</button>
           <button class="ufvc-speed-item active" data-speed="1">1x</button>
           <button class="ufvc-speed-item" data-speed="1.25">1.25x</button>
           <button class="ufvc-speed-item" data-speed="1.5">1.5x</button>
+          <button class="ufvc-speed-item" data-speed="1.75">1.75x</button>
           <button class="ufvc-speed-item" data-speed="2">2x</button>
+          <button class="ufvc-speed-item" data-speed="2.5">2.5x</button>
+          <button class="ufvc-speed-item" data-speed="3">3x</button>
         </div>
       </div>
 

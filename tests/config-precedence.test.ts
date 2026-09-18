@@ -16,6 +16,7 @@ describe('ConfigPrecedence', () => {
     expect(config.minHeight).toBe(DEFAULT_GLOBAL_SETTINGS.minHeight);
     expect(config.visibilityThreshold).toBe(DEFAULT_GLOBAL_SETTINGS.visibilityThreshold);
     expect(config.seekInterval).toBe(DEFAULT_GLOBAL_SETTINGS.seekInterval);
+    expect(config.shortcuts).toEqual(DEFAULT_GLOBAL_SETTINGS.shortcuts);
   });
 
   it('allows global user settings to override built-in defaults', () => {
@@ -123,5 +124,26 @@ describe('ConfigPrecedence', () => {
 
     expect(config.controllerPosition).toBe('top-inside'); // site overrides global
     expect(config.controlsLayout).toBe('minimal'); // global setting
+  });
+
+  it('merges custom keyboard shortcuts with defaults', () => {
+    const config = resolveEffectiveConfig({
+      domain: 'youtube.com',
+      globalUserSettings: {
+        shortcuts: {
+          toggleMute: 'Ctrl+KeyM',
+          togglePlay: 'Ctrl+Space',
+          seekBackward: 'ArrowLeft',
+          seekForward: 'ArrowRight',
+          volumeUp: 'ArrowUp',
+          volumeDown: 'ArrowDown',
+          toggleFullscreen: 'KeyF'
+        }
+      }
+    });
+
+    expect(config.shortcuts.toggleMute).toBe('Ctrl+KeyM');
+    expect(config.shortcuts.togglePlay).toBe('Ctrl+Space');
+    expect(config.shortcuts.toggleFullscreen).toBe('KeyF');
   });
 });

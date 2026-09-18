@@ -90,6 +90,10 @@ export function resolveEffectiveConfig(input: PrecedenceInput): ResolvedConfig {
     defaults.autoHideDelay
   );
 
+  const defaultShortcuts = defaults.shortcuts || DEFAULT_GLOBAL_SETTINGS.shortcuts;
+  const userShortcuts = globalUser.shortcuts || {};
+  const shortcuts = { ...defaultShortcuts, ...userShortcuts };
+
   return {
     enabled,
     theme,
@@ -100,6 +104,7 @@ export function resolveEffectiveConfig(input: PrecedenceInput): ResolvedConfig {
     visibilityThreshold,
     seekInterval,
     allowMultiple,
-    autoHideDelay
+    autoHideDelay,
+    shortcuts
   };
 }

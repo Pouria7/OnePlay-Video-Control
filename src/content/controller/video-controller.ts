@@ -438,4 +438,14 @@ export class VideoController {
       this.ui.host.parentNode.removeChild(this.ui.host);
     }
   }
+
+  /**
+   * Toggles mute on the controlled video
+   */
+  toggleMute(): void {
+    this.video.muted = !this.video.muted;
+    if (!this.video.muted && this.video.volume === 0) {
+      this.video.volume = 0.5;
+    }
+  }
 }

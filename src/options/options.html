@@ -35,6 +35,10 @@
           <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M12 3c-4.97 0-9 4.03-9 9 0 2.12.74 4.07 1.97 5.61L4.35 19.4c-.39.39-.39 1.02 0 1.41.39.39 1.02.39 1.41 0l1.9-1.9C9.28 19.59 10.59 20 12 20c4.97 0 9-4.03 9-9s-4.03-9-9-9zm0 15c-1.12 0-2.17-.32-3.07-.86l2.36-2.36c.39-.39.39-1.02 0-1.41-.39-.39-1.02-.39-1.41 0l-2.36 2.36C6.98 14.83 6.66 13.78 6.66 12.66c0-2.95 2.39-5.34 5.34-5.34s5.34 2.39 5.34 5.34-2.39 5.34-5.34 5.34z"/></svg>
           Theme Builder
         </a>
+        <a href="#shortcuts" class="nav-item" data-tab="shortcuts">
+          <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M20 5H4c-1.1 0-1.99.9-1.99 2L2 17c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm-9 3h2v2h-2V8zm0 3h2v2h-2v-2zM8 8h2v2H8V8zm0 3h2v2H8v-2zm-1 2H5v-2h2v2zm0-3H5V8h2v2zm9 7H8v-2h8v2zm0-4h-2v-2h2v2zm0-3h-2V8h2v2zm3 3h-2v-2h2v2zm0-3h-2V8h2v2z"/></svg>
+          Keyboard Shortcuts
+        </a>
       </nav>
 
       <div class="sidebar-footer">
@@ -367,6 +371,72 @@
               </div>
             </div>
             <p class="preview-hint">Live preview showing theme, docking position, and control density.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Section 4: Keyboard Shortcuts -->
+      <section id="section-shortcuts" class="content-section">
+        <header class="section-header">
+          <h1 class="page-title">Keyboard Shortcuts</h1>
+          <p class="page-desc">Customize global video playback shortcuts and combination keys (e.g. Space, Ctrl+M, Alt+Right).</p>
+        </header>
+
+        <div class="settings-card">
+          <div class="shortcuts-table-container">
+            <table class="shortcuts-table">
+              <thead>
+                <tr>
+                  <th>Action</th>
+                  <th>Description</th>
+                  <th style="text-align: right;">Shortcut Key</th>
+                </tr>
+              </thead>
+              <tbody id="shortcutsTableBody">
+                <tr>
+                  <td><strong>Play / Pause</strong></td>
+                  <td class="sc-desc">Toggle playback of the active video</td>
+                  <td style="text-align: right;"><button class="shortcut-badge-btn" data-action="togglePlay" id="scBtn-togglePlay">Space</button></td>
+                </tr>
+                <tr>
+                  <td><strong>Seek Backward</strong></td>
+                  <td class="sc-desc">Jump backward by configured seek interval (-5s)</td>
+                  <td style="text-align: right;"><button class="shortcut-badge-btn" data-action="seekBackward" id="scBtn-seekBackward">← Left</button></td>
+                </tr>
+                <tr>
+                  <td><strong>Seek Forward</strong></td>
+                  <td class="sc-desc">Jump forward by configured seek interval (+5s)</td>
+                  <td style="text-align: right;"><button class="shortcut-badge-btn" data-action="seekForward" id="scBtn-seekForward">→ Right</button></td>
+                </tr>
+                <tr>
+                  <td><strong>Volume Up</strong></td>
+                  <td class="sc-desc">Increase playback volume by 10%</td>
+                  <td style="text-align: right;"><button class="shortcut-badge-btn" data-action="volumeUp" id="scBtn-volumeUp">↑ Up</button></td>
+                </tr>
+                <tr>
+                  <td><strong>Volume Down</strong></td>
+                  <td class="sc-desc">Decrease playback volume by 10%</td>
+                  <td style="text-align: right;"><button class="shortcut-badge-btn" data-action="volumeDown" id="scBtn-volumeDown">↓ Down</button></td>
+                </tr>
+                <tr>
+                  <td><strong>Mute / Unmute</strong></td>
+                  <td class="sc-desc">Toggle audio mute / unmute</td>
+                  <td style="text-align: right;"><button class="shortcut-badge-btn" data-action="toggleMute" id="scBtn-toggleMute">M</button></td>
+                </tr>
+                <tr>
+                  <td><strong>Toggle Fullscreen</strong></td>
+                  <td class="sc-desc">Enter or exit full-screen mode</td>
+                  <td style="text-align: right;"><button class="shortcut-badge-btn" data-action="toggleFullscreen" id="scBtn-toggleFullscreen">F</button></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="shortcuts-footer">
+            <p class="shortcuts-hint">
+              💡 <strong>Tip:</strong> Click any shortcut badge above and press your desired key or combination (e.g. <code>Ctrl + M</code>, <code>Alt + Right</code>, <code>Shift + Space</code>). Press <strong>Esc</strong> to cancel.
+            </p>
+            <button id="resetShortcutsBtn" class="btn-secondary">Reset to Defaults</button>
           </div>
         </div>
       </section>

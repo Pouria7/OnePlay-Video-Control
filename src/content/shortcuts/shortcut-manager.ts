@@ -1,16 +1,21 @@
 /**
  * Keyboard Shortcut Manager
  *
- * Handles global video control shortcuts (Space, Arrows, J, L) while strictly
+ * Handles configurable global video control shortcuts (Space, Mute, Seek, Volume, Fullscreen)
+ * with support for combination keys (Ctrl+M, Alt+Right, etc.), while strictly
  * guarding against interference when typing into inputs, textareas, contenteditable elements,
  * or when no active video is present.
  */
 
+import { ShortcutsConfig } from '../../types';
+import { DEFAULT_SHORTCUTS } from '../../storage/types';
 import { getDeepActiveElement, isEditableElement } from '../../utils/dom';
+import { matchesShortcut } from '../../utils/shortcuts';
 import { ControllerManager } from '../controller/controller-manager';
 
 export interface ShortcutConfig {
   seekInterval: number;
+  shortcuts?: ShortcutsConfig;
 }
 
 export class ShortcutManager {
@@ -24,7 +29,7 @@ export class ShortcutManager {
   }
 
   /**
-   * Updates shortcut configuration (e.g. seek interval)
+   * Updates shortcut configuration (e.g. seek interval, custom shortcut bindings)
    */
   updateConfig(config: Partial<ShortcutConfig>): void {
     this.config = { ...this.config, ...config };
@@ -43,12 +48,22 @@ export class ShortcutManager {
         return;
       }
 
-      // 2. Ignore with modifier keys (Ctrl, Alt, Meta) to preserve OS/browser shortcuts
-      if (e.ctrlKey || e.altKey || e.metaKey) {
+      const shortcuts = this.config.shortcuts || DEFAULT_SHORTCUTS;
+
+      // Check if event matches any configured shortcut
+      const isPlay = matchesShortcut(e, shortcuts.togglePlay);
+      const isSeekBack = matchesShortcut(e, shortcuts.seekBackward) || (!shortcuts.seekBackward && (e.code === 'KeyJ' || e.code === 'ArrowLeft'));
+      const isSeekFwd = matchesShortcut(e, shortcuts.seekForward) || (!shortcuts.seekForward && (e.code === 'KeyL' || e.code === 'ArrowRight'));
+      const isVolUp = matchesShortcut(e, shortcuts.volumeUp);
+      const isVolDown = matchesShortcut(e, shortcuts.volumeDown);
+      const isMute = matchesShortcut(e, shortcuts.toggleMute);
+      const isFullscreen = matchesShortcut(e, shortcuts.toggleFullscreen);
+
+      if (!isPlay && !isSeekBack && !isSeekFwd && !isVolUp && !isVolDown && !isMute && !isFullscreen) {
         return;
       }
 
-      // 3. Find target active video controller
+      // 2. Find target active video controller
       const controllers = this.controllerManager.getAllControllers();
       if (controllers.length === 0) {
         return;
@@ -65,47 +80,43 @@ export class ShortcutManager {
       const video = targetController.video;
       const seekSecs = this.config.seekInterval || 5;
 
-      switch (e.code) {
-        case 'Space':
-          e.preventDefault();
-          e.stopPropagation();
-          if (video.paused) {
-            video.play().catch(() => {});
-          } else {
-            video.pause();
+      e.preventDefault();
+      e.stopPropagation();
+
+      if (isPlay) {
+        if (video.paused) {
+          video.play().catch(() => {});
+        } else {
+          video.pause();
+        }
+      } else if (isSeekBack) {
+        video.currentTime = Math.max(0, video.currentTime - seekSecs);
+      } else if (isSeekFwd) {
+        const dur = isFinite(video.duration) ? video.duration : Infinity;
+        video.currentTime = Math.min(dur, video.currentTime + seekSecs);
+      } else if (isVolUp) {
+        video.volume = Math.min(1, Math.round((video.volume + 0.1) * 10) / 10);
+        video.muted = false;
+      } else if (isVolDown) {
+        video.volume = Math.max(0, Math.round((video.volume - 0.1) * 10) / 10);
+        if (video.volume === 0) {
+          video.muted = true;
+        }
+      } else if (isMute) {
+        video.muted = !video.muted;
+        if (!video.muted && video.volume === 0) {
+          video.volume = 0.5;
+        }
+      } else if (isFullscreen) {
+        if (!document.fullscreenElement) {
+          if (video.requestFullscreen) {
+            video.requestFullscreen().catch(() => {});
+          } else if ((video as any).webkitRequestFullscreen) {
+            (video as any).webkitRequestFullscreen();
           }
-          break;
-
-        case 'ArrowLeft':
-        case 'KeyJ':
-          e.preventDefault();
-          e.stopPropagation();
-          video.currentTime = Math.max(0, video.currentTime - seekSecs);
-          break;
-
-        case 'ArrowRight':
-        case 'KeyL':
-          e.preventDefault();
-          e.stopPropagation();
-          const dur = isFinite(video.duration) ? video.duration : Infinity;
-          video.currentTime = Math.min(dur, video.currentTime + seekSecs);
-          break;
-
-        case 'ArrowUp':
-          e.preventDefault();
-          e.stopPropagation();
-          video.volume = Math.min(1, Math.round((video.volume + 0.1) * 10) / 10);
-          video.muted = false;
-          break;
-
-        case 'ArrowDown':
-          e.preventDefault();
-          e.stopPropagation();
-          video.volume = Math.max(0, Math.round((video.volume - 0.1) * 10) / 10);
-          if (video.volume === 0) {
-            video.muted = true;
-          }
-          break;
+        } else {
+          document.exitFullscreen().catch(() => {});
+        }
       }
     };
 

@@ -52,7 +52,8 @@ class ContentCoordinator {
 
     // 3. Initialize Shortcut Manager
     this.shortcutManager = new ShortcutManager(this.controllerManager, {
-      seekInterval: this.currentConfig.seekInterval
+      seekInterval: this.currentConfig.seekInterval,
+      shortcuts: this.currentConfig.shortcuts
     });
     this.shortcutManager.start();
 
@@ -88,7 +89,10 @@ class ContentCoordinator {
     storageManager.onChanged(async () => {
       await this.reloadConfiguration();
       this.controllerManager.updateConfig(this.currentConfig);
-      this.shortcutManager.updateConfig({ seekInterval: this.currentConfig.seekInterval });
+      this.shortcutManager.updateConfig({
+        seekInterval: this.currentConfig.seekInterval,
+        shortcuts: this.currentConfig.shortcuts
+      });
       this.scheduleSelection();
     });
 
