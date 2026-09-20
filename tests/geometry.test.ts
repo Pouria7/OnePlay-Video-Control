@@ -51,14 +51,14 @@ describe('calculateControllerPosition', () => {
     expect(pos.height).toBe(62);
   });
 
-  it('calculates position and dimensions for compact minimal pill (136x34px)', () => {
-    const pos = calculateControllerPosition(videoRect, 136, 34, 10, 'bottom-inside');
+  it('calculates position and dimensions for compact minimal pill (118x34px)', () => {
+    const pos = calculateControllerPosition(videoRect, 118, 34, 10, 'bottom-inside');
     expect(pos.visible).toBe(true);
     // 400 - 34 - 10 = 356
     expect(pos.top).toBe(356);
     expect(pos.height).toBe(34);
-    expect(pos.width).toBe(136);
-    // left: 200 + (400 - 136)/2 = 332
+    expect(pos.width).toBe(118);
+    // left: 200 + (400 - 118)/2 = 332
     expect(pos.left).toBe(332);
   });
 });

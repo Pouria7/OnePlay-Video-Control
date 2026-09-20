@@ -668,7 +668,7 @@ input:checked + .toggle-slider:before {
 /* Minimal mode in preview: compact floating pill */
 .mock-ufvc-bar.minimal-mode {
   position: relative;
-  width: 136px !important;
+  width: 118px !important;
   height: 34px !important;
   padding: 0 6px 3px 6px;
   justify-content: center;

@@ -513,7 +513,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       const isMinimal = mockLayoutSelect.value === 'minimal';
       mockBar.classList.toggle('minimal-mode', isMinimal);
       if (mockControllerHost) {
-        mockControllerHost.style.maxWidth = isMinimal ? '136px' : (mockWidthSelect.value === 'narrow' ? '280px' : '380px');
+        mockControllerHost.style.maxWidth = isMinimal ? '118px' : (mockWidthSelect.value === 'narrow' ? '280px' : '380px');
       }
     });
   }

@@ -152,14 +152,23 @@ export function createShadowUI(): ShadowUIElements {
     }
 
     /* Mini non-interactive progress bar (shown in minimal mode) */
-    .ufvc-mini-progress {
+    .ufvc-mini-progress-container {
       display: none;
+    }
+    .ufvc-mini-progress {
+      position: absolute;
+      bottom: 0;
+      width: 100%;
+      height: 3px;
+      background: rgba(255, 255, 255, 0.15);
+      pointer-events: none;
+      overflow: hidden;
     }
 
     /* Minimal controls mode: compact floating pill */
     .ufvc-bar.minimal-mode {
       position: relative;
-      width: 136px;
+      width: 118px;
       height: 34px;
       padding: 0 6px 3px 6px;
       justify-content: center;
@@ -196,25 +205,21 @@ export function createShadowUI(): ShadowUIElements {
     .ufvc-bar.minimal-mode .ufvc-seek-forward-btn { order: 3; }
 
     /* Non-interactive slim progress line underneath */
-    .ufvc-bar.minimal-mode .ufvc-mini-progress {
+    .ufvc-bar.minimal-mode .ufvc-mini-progress-container {
       display: block;
       position: absolute;
-      bottom: 0;
+      height: var(--ufvc-radius, 10px);
       left: 0;
+      bottom: 0;
       right: 0;
-      width: 100%;
-      height: 3px;
-      background: rgba(255, 255, 255, 0.15);
-      pointer-events: none;
-      border-radius: 0 0 var(--ufvc-radius, 10px) var(--ufvc-radius, 10px);
-      overflow: hidden;
+      overflow: clip;
+      border-radius: 0 0 var(--ufvc-radius, 10px) var(--ufvc-radius, 10px)
     }
 
     .ufvc-bar.minimal-mode .ufvc-mini-progress-bar {
       height: 100%;
       width: 0%;
       background: var(--ufvc-accent, #38bdf8);
-      border-radius: 0 0 var(--ufvc-radius, 10px) var(--ufvc-radius, 10px);
       transition: width 0.12s linear;
     }
 
@@ -347,11 +352,11 @@ export function createShadowUI(): ShadowUIElements {
     .ufvc-volume-slider-box {
       display: none;
       position: absolute;
-      bottom: 34px;
+      bottom: 30px;
       left: 50%;
       transform: translateX(-50%);
       background: var(--ufvc-bg, rgba(18, 20, 24, 0.9));
-      padding: 8px 6px;
+      padding: 8px 10px;
       border-radius: 8px;
       border: var(--ufvc-border, 1px solid rgba(255, 255, 255, 0.12));
       box-shadow: var(--ufvc-shadow, 0 4px 16px rgba(0,0,0,0.4));
@@ -367,14 +372,57 @@ export function createShadowUI(): ShadowUIElements {
       display: flex;
     }
 
-    .ufvc-volume-slider {
-      writing-mode: vertical-lr;
-      direction: rtl;
-      width: 14px;
-      height: 74px;
-      accent-color: var(--ufvc-accent, #38bdf8);
-      cursor: pointer;
-    }
+  .ufvc-volume-slider {
+    -webkit-appearance: none;
+    appearance: none;
+    writing-mode: vertical-lr;
+    direction: rtl;
+    width: 4px;
+    height: 74px;
+    background: var(--ufvc-bg, rgba(255, 255, 255, 0.15));
+    border-radius: var(--ufvc-radius, 9999px);
+    outline: none;
+    cursor: pointer;
+    transition: width 0.2s ease, opacity 0.2s ease;
+  }
+
+
+.ufvc-volume-slider:hover {
+    width: 6px;
+  }
+
+
+  .ufvc-volume-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 12px;
+    height: 12px;
+    background: var(--ufvc-accent, #38bdf8);
+    border-radius: 50%;
+    box-shadow: var(--ufvc-shadow, 0 0 8px rgba(56, 189, 248, 0.4));
+    transition: transform 0.15s ease, background-color 0.15s ease;
+  }
+
+  .ufvc-volume-slider::-webkit-slider-thumb:hover {
+    transform: scale(1.25);
+    background: var(--ufvc-accent-hover, #7dd3fc);
+  }
+
+
+  .ufvc-volume-slider::-moz-range-thumb {
+    width: 12px;
+    height: 12px;
+    background: var(--ufvc-accent, #38bdf8);
+    border: none;
+    border-radius: 50%;
+    box-shadow: var(--ufvc-shadow, 0 0 8px rgba(56, 189, 248, 0.4));
+    transition: transform 0.15s ease, background-color 0.15s ease;
+  }
+
+  .ufvc-volume-slider::-moz-range-thumb:hover {
+    transform: scale(1.25);
+    background: var(--ufvc-accent-hover, #7dd3fc);
+  }
 
     /* Speed Menu */
     .ufvc-speed-wrapper {
@@ -598,8 +646,10 @@ export function createShadowUI(): ShadowUIElements {
       </button>
     </div>
 
-    <div class="ufvc-mini-progress">
-      <div class="ufvc-mini-progress-bar"></div>
+    <div class="ufvc-mini-progress-container">
+       <div class="ufvc-mini-progress">
+          <div class="ufvc-mini-progress-bar"></div>
+       </div>
     </div>
 
     <div class="ufvc-context-menu" role="menu">

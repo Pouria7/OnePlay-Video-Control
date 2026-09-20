@@ -40,7 +40,7 @@ A robust, website-independent video controller for HTML5 `<video>` elements acro
   - **Auto & Manual Save**: Recording automatically finalizes and triggers download when the video finishes, or can be stopped manually at any moment with the stop button.
 - **Controls Layout Modes**:
   - **Full Layout**: Complete control bar with interactive scrub bar, time display, volume slider, speed picker, and fullscreen.
-  - **Minimal Pill Layout**: Ultra-compact $136\times 34$px pill with essential buttons (Seek -5s, Play/Pause, Seek +5s) and a non-intrusive slim progress bar running underneath.
+  - **Minimal Pill Layout**: Ultra-compact $118\times 34$px pill with essential buttons (Seek -5s, Play/Pause, Seek +5s) and a non-intrusive slim progress bar running underneath.
   - **Responsive 2-Row Mode**: Automatically adapts to a 2-row layout on narrow videos (<340px) so controls never get squished.
 - **Flexible Controller Docking Positions**:
   - Bottom Inside (`bottom-inside`), Bottom Outside (`bottom-outside`), Top Inside (`top-inside`), Top Outside (`top-outside`).

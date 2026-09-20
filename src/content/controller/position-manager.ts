@@ -70,7 +70,7 @@ export class PositionManager {
 
     if (isMinimal) {
       this.containerElement.classList.remove('two-row');
-      controllerWidth = 136;
+      controllerWidth = 118;
       controllerHeight = 34;
     } else {
       const isNarrow = videoRect.width < 340;
