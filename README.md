@@ -400,7 +400,6 @@ universal-video-controls/
 ├── CHROMEWEBSTORE.md          # Chrome Web Store listing metadata & justifications
 ├── README.md                  # Comprehensive documentation
 ├── scripts/
-│   ├── generate-icons.js      # Binary PNG generator for icons
 │   └── build.js               # Multi-target extension bundler
 ├── public/
 │   ├── manifest.json          # Manifest copied to dist

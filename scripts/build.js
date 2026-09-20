@@ -10,9 +10,6 @@ const distDir = path.resolve(rootDir, 'dist');
 async function runBuild() {
   console.log('🚀 Starting Universal Video Controls extension build...');
 
-  // Ensure icons are generated
-  await import('./generate-icons.js');
-
   // Clean dist directory
   if (fs.existsSync(distDir)) {
     fs.rmSync(distDir, { recursive: true, force: true });

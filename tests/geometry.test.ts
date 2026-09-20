@@ -58,7 +58,7 @@ describe('calculateControllerPosition', () => {
     expect(pos.top).toBe(356);
     expect(pos.height).toBe(34);
     expect(pos.width).toBe(118);
-    // left: 200 + (400 - 118)/2 = 332
-    expect(pos.left).toBe(332);
+    // left: 200 + (400 - 118)/2 = 200 + 141 = 341
+    expect(pos.left).toBe(341);
   });
 });
