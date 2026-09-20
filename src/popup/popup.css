@@ -52,12 +52,9 @@ body {
 .logo-icon {
   width: 30px;
   height: 30px;
-  border-radius: 8px;
-  background: linear-gradient(135deg, #6366f1, #06b6d4);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #ffffff;
 }
 
 .extension-title {
