@@ -65,6 +65,10 @@ class ContentCoordinator {
         if (this.activeAdapter.onVideoDeactivated) {
           this.activeAdapter.onVideoDeactivated(video);
         }
+      },
+      {
+        filterVideo: this.activeAdapter.filterVideo ? (v) => this.activeAdapter.filterVideo!(v) : undefined,
+        scoreVideo: this.activeAdapter.scoreVideo ? (v, ctx) => this.activeAdapter.scoreVideo!(v, ctx) : undefined
       }
     );
 
@@ -125,6 +129,14 @@ class ContentCoordinator {
     themeEngine.setCustomThemes(all.customThemes);
 
     this.activeAdapter = adapterManager.resolve(this.currentUrl);
+
+    if (this.registry) {
+      this.registry.setHooks({
+        filterVideo: this.activeAdapter.filterVideo ? (v) => this.activeAdapter.filterVideo!(v) : undefined,
+        scoreVideo: this.activeAdapter.scoreVideo ? (v, ctx) => this.activeAdapter.scoreVideo!(v, ctx) : undefined
+      });
+      this.registry.updateAll(this.currentConfig);
+    }
 
     this.currentConfig = resolveEffectiveConfig({
       domain: this.currentDomain,

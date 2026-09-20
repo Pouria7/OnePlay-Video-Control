@@ -6,13 +6,20 @@
  */
 
 import { VideoLifecycleState } from '../../types';
-import { TrackedVideo, VideoDetectionConfig } from './types';
+import { TrackedVideo, VideoCandidateContext, VideoDetectionConfig } from './types';
 import { intersectionTracker } from './intersection-tracker';
 import { isCandidateVideo } from './candidate-filter';
 import { calculateVideoScore } from './video-scorer';
 
 export type VideoUpdateCallback = (tracked: TrackedVideo) => void;
 export type VideoRemovedCallback = (videoId: string, video: HTMLVideoElement) => void;
+export type VideoFilterFn = (video: HTMLVideoElement) => boolean;
+export type VideoScorerFn = (video: HTMLVideoElement, context: VideoCandidateContext) => number | null;
+
+export interface VideoRegistryHooks {
+  filterVideo?: VideoFilterFn;
+  scoreVideo?: VideoScorerFn;
+}
 
 interface InternalTrackedRecord extends TrackedVideo {
   cleanupFns: Array<() => void>;
@@ -24,18 +31,30 @@ export class VideoRegistry {
   private idCounter = 0;
   private onUpdateCallback: VideoUpdateCallback | null = null;
   private onRemoveCallback: VideoRemovedCallback | null = null;
+  private customFilter?: VideoFilterFn;
+  private customScorer?: VideoScorerFn;
 
   constructor(
     onUpdate?: VideoUpdateCallback,
-    onRemove?: VideoRemovedCallback
+    onRemove?: VideoRemovedCallback,
+    hooks?: VideoRegistryHooks
   ) {
     if (onUpdate) this.onUpdateCallback = onUpdate;
     if (onRemove) this.onRemoveCallback = onRemove;
+    if (hooks) {
+      this.customFilter = hooks.filterVideo;
+      this.customScorer = hooks.scoreVideo;
+    }
   }
 
   setCallbacks(onUpdate: VideoUpdateCallback, onRemove: VideoRemovedCallback): void {
     this.onUpdateCallback = onUpdate;
     this.onRemoveCallback = onRemove;
+  }
+
+  setHooks(hooks: VideoRegistryHooks): void {
+    this.customFilter = hooks.filterVideo;
+    this.customScorer = hooks.scoreVideo;
   }
 
   /**
@@ -164,7 +183,8 @@ export class VideoRegistry {
     record.playbackRate = video.playbackRate;
     record.lastUpdated = Date.now();
 
-    const isCandidate = isCandidateVideo(video, config);
+    const activeFilter = this.customFilter;
+    const isCandidate = isCandidateVideo(video, config, activeFilter);
 
     if (isCandidate) {
       if (record.state !== VideoLifecycleState.ACTIVE) {
@@ -179,7 +199,8 @@ export class VideoRegistry {
           isMuted: record.isMuted,
           volume: record.volume
         },
-        config.visibilityThreshold
+        config.visibilityThreshold,
+        this.customScorer
       );
       record.score = breakdown.total;
       record.scoreBreakdown = breakdown;
@@ -190,6 +211,15 @@ export class VideoRegistry {
 
     if (this.onUpdateCallback) {
       this.onUpdateCallback(record);
+    }
+  }
+
+  /**
+   * Re-evaluates all tracked videos with current config and hooks
+   */
+  updateAll(config: VideoDetectionConfig): void {
+    for (const video of this.records.keys()) {
+      this.updateVideoState(video, config);
     }
   }
 
@@ -225,7 +255,13 @@ export class VideoRegistry {
    */
   getCandidates(): TrackedVideo[] {
     const list: TrackedVideo[] = [];
-    for (const record of this.records.values()) {
+    for (const [video, record] of this.records.entries()) {
+      // Re-verify against custom adapter filter if present
+      if (this.customFilter && !this.customFilter(video)) {
+        record.state = VideoLifecycleState.INACTIVE;
+        record.score = 0;
+        continue;
+      }
       if (
         record.state === VideoLifecycleState.CANDIDATE ||
         record.state === VideoLifecycleState.ACTIVE
