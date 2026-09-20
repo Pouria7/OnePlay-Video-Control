@@ -71,7 +71,7 @@
 
           <div class="setting-item">
             <div class="setting-text">
-              <label class="setting-title">Default Website Injection Policy</label>
+              <h3 class="setting-title">Default Website Injection Policy</h3>
               <p class="setting-sub">Controls how new or unconfigured websites are handled.</p>
             </div>
             <div class="policy-selector">
@@ -96,7 +96,7 @@
 
           <div class="setting-item">
             <div class="setting-text">
-              <label class="setting-title">Default Theme</label>
+              <h3 class="setting-title">Default Theme</h3>
               <p class="setting-sub">The default theme applied when no per-site theme is chosen.</p>
             </div>
             <select id="optDefaultTheme" class="dashboard-select">
@@ -111,7 +111,7 @@
 
           <div class="setting-item">
             <div class="setting-text">
-              <label class="setting-title">Controller Docking Position</label>
+              <h3 class="setting-title">Controller Docking Position</h3>
               <p class="setting-sub">Where the floating controller appears relative to the video frame.</p>
             </div>
             <select id="optDefaultPosition" class="dashboard-select">
@@ -126,7 +126,7 @@
 
           <div class="setting-item">
             <div class="setting-text">
-              <label class="setting-title">Controls Layout Density</label>
+              <h3 class="setting-title">Controls Layout Density</h3>
               <p class="setting-sub">Choose between full playback tools or a compact minimal pill (Play, Seek, Slim Progress).</p>
             </div>
             <select id="optDefaultLayout" class="dashboard-select">
@@ -139,7 +139,7 @@
 
           <div class="setting-item">
             <div class="setting-text">
-              <label class="setting-title">Allow Multiple Active Controllers</label>
+              <h3 class="setting-title">Allow Multiple Active Controllers</h3>
               <p class="setting-sub">Allows simultaneously visible videos (e.g. split screens) to each receive a controller.</p>
             </div>
             <label class="toggle-switch">
@@ -334,7 +334,22 @@
 
               <!-- Interactive Mock Floating Controller Bar -->
               <div class="mock-floating-host" id="mockControllerHost">
+
                 <div class="mock-ufvc-bar" id="mockBar">
+
+                <div class="mock-contol-one-row">
+                 <button class="mock-btn" id="mockPlayBtn" title="Play/Pause">
+                      <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><path d="M8 5v14l11-7z"/></svg>
+                    </button>
+                    <button class="mock-btn" id="mockSeekBackBtn" title="Seek -5s">
+                      <svg viewBox="0 0 24 24" fill="currentColor" width="15" height="15"><path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/><text x="12" y="15.5" font-size="7.5" font-weight="700" font-family="sans-serif" text-anchor="middle" fill="currentColor">5</text></svg>
+                    </button>
+                    <button class="mock-btn" id="mockSeekForwardBtn" title="Seek +5s">
+                      <svg viewBox="0 0 24 24" fill="currentColor" width="15" height="15"><path d="M12 5V1l5 5-5 5V7c-3.31 0-6 2.69-6 6s2.69 6 6 6 6-2.69 6-6h2c0 4.42-3.58 8-8 8s-8-3.58-8-8 3.58-8 8-8z"/><text x="12" y="15.5" font-size="7.5" font-weight="700" font-family="sans-serif" text-anchor="middle" fill="currentColor">5</text></svg>
+                    </button>
+                </div>
+
+
                   <div class="mock-mini-progress">
                     <div class="mock-mini-progress-bar" style="width: 30%;"></div>
                   </div>
@@ -350,19 +365,21 @@
                   </div>
 
                   <div class="mock-row-bottom">
-                    <button class="mock-btn" id="mockPlayBtn" title="Play/Pause">
+               
+                    <button class="mock-btn mock-contol-two-row" id="mockPlayBtn" title="Play/Pause">
                       <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><path d="M8 5v14l11-7z"/></svg>
                     </button>
-                    <button class="mock-btn" id="mockSeekBackBtn" title="Seek -5s">
+                    <button class="mock-btn mock-contol-two-row" id="mockSeekBackBtn" title="Seek -5s">
                       <svg viewBox="0 0 24 24" fill="currentColor" width="15" height="15"><path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/><text x="12" y="15.5" font-size="7.5" font-weight="700" font-family="sans-serif" text-anchor="middle" fill="currentColor">5</text></svg>
                     </button>
-                    <button class="mock-btn" id="mockSeekForwardBtn" title="Seek +5s">
+                    <button class="mock-btn mock-contol-two-row" id="mockSeekForwardBtn" title="Seek +5s">
                       <svg viewBox="0 0 24 24" fill="currentColor" width="15" height="15"><path d="M12 5V1l5 5-5 5V7c-3.31 0-6 2.69-6 6s2.69 6 6 6 6-2.69 6-6h2c0 4.42-3.58 8-8 8s-8-3.58-8-8 3.58-8 8-8z"/><text x="12" y="15.5" font-size="7.5" font-weight="700" font-family="sans-serif" text-anchor="middle" fill="currentColor">5</text></svg>
                     </button>
+           
                     <button class="mock-btn mock-extra-control" title="Volume">
                       <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z"/></svg>
                     </button>
-                    <button class="mock-btn mock-speed-btn mock-extra-control" title="Speed">1x</button>
+                    <button class="mock-btn mock-speed-btn mock-extra-control" title="Speed">1.5x</button>
                     <button class="mock-btn mock-extra-control" title="Fullscreen">
                       <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>
                     </button>

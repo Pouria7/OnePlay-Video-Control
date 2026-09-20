@@ -404,13 +404,13 @@ document.addEventListener('DOMContentLoaded', async () => {
       const theme = BUILTIN_THEMES[bKey];
       if (theme) {
         builderThemeName.value = `${theme.name} Copy`;
-        builderTextColor.value = theme.textColor;
-        builderAccentColor.value = theme.accentColor;
-        builderBorderColor.value = theme.borderColor;
-        builderOpacity.value = String(Math.round(theme.opacity * 100));
-        builderBlur.value = theme.backdropBlur.replace('px', '').replace('blur(', '').replace(')', '');
-        builderRadius.value = theme.borderRadius.replace('px', '');
-        builderScale.value = String(Math.round(theme.scale * 100));
+        builderTextColor.value = theme.properties.text;
+        builderAccentColor.value = theme.properties.accent;
+        builderBorderColor.value = '#374151';
+        builderOpacity.value = String(Math.round(theme.properties.opacity * 100));
+        builderBlur.value = theme.properties.blur.replace('px', '').replace('blur(', '').replace(')', '');
+        builderRadius.value = theme.properties.radius.replace('px', '');
+        builderScale.value = String(Math.round(theme.properties.scale * 100));
       }
       deleteThemeBtn.style.display = 'none';
     } else if (val.startsWith('custom:')) {

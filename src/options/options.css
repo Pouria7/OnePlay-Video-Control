@@ -124,7 +124,7 @@ body {
 
 .content-section {
   display: none;
-  max-width: 880px;
+  max-width: 980px;
 }
 
 .content-section.active {
@@ -200,7 +200,6 @@ body {
 .policy-selector {
   display: flex;
   gap: 12px;
-  width: 100%;
   margin-top: 8px;
 }
 
@@ -401,6 +400,7 @@ input:checked + .toggle-slider:before {
   border: 1px solid var(--card-border);
   border-radius: var(--border-radius);
   overflow: hidden;
+  overflow-x: auto;
 }
 
 .sites-table {
@@ -618,8 +618,12 @@ input:checked + .toggle-slider:before {
 }
 
 .mock-row-top,
-.mock-row-bottom {
+.mock-row-bottom{
   display: contents;
+}
+
+.mock-contol-one-row{
+  display: flex;
 }
 
 /* 2-row layout in preview */
@@ -637,6 +641,15 @@ input:checked + .toggle-slider:before {
   gap: 8px;
   width: 100%;
   height: 22px;
+}
+
+
+.mock-ufvc-bar .mock-contol-two-row, .mock-ufvc-bar.two-row:not(.minimal-mode) .mock-contol-one-row{
+  display: none;
+}
+
+.mock-ufvc-bar.two-row .mock-contol-two-row{
+  display: block;
 }
 
 .mock-ufvc-bar.two-row .mock-row-bottom {
@@ -666,7 +679,8 @@ input:checked + .toggle-slider:before {
 .mock-ufvc-bar.minimal-mode .mock-row-top,
 .mock-ufvc-bar.minimal-mode .mock-time,
 .mock-ufvc-bar.minimal-mode .mock-progress-container,
-.mock-ufvc-bar.minimal-mode .mock-extra-control {
+.mock-ufvc-bar.minimal-mode .mock-row-bottom
+ {
   display: none !important;
 }
 
