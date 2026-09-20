@@ -25,7 +25,8 @@
     "type": "module"
   },
   "permissions": [
-    "storage"
+    "storage",
+    "downloads"
   ],
   "host_permissions": [
     "<all_urls>"

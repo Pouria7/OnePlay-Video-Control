@@ -26,9 +26,9 @@ export class YouTubeAdapter implements SiteAdapter {
 
   getConfigOverrides(): Partial<SiteSettings> {
     return {
-      minWidth: 120,
-      minHeight: 80,
-      visibilityThreshold: 0.5,
+      minWidth: 100,
+      minHeight: 60,
+      visibilityThreshold: 0.2,
       allowMultiple: false // Only one active preview at a time
     };
   }
@@ -50,52 +50,51 @@ export class YouTubeAdapter implements SiteAdapter {
   }
 
   /**
-   * Strictly allow only YouTube preview cards.
-   * Excludes main watch player via maximum size threshold (500x420) and container checks,
-   * while allowing small preview cards in sidebar on /watch or in feed.
+   * YouTube Candidate Filter:
+   * 1. Whitelists preview video cards (inline-player, ytd-video-preview, secondary/sidebar recommendations).
+   * 2. Excludes YouTube's main watch player.
+   * 3. Excludes full-screen Shorts reels.
    */
   filterVideo(video: HTMLVideoElement): boolean {
-    // 1. Exclude videos exceeding maximum preview dimensions (main watch player is large)
-    const rect = video.getBoundingClientRect();
-    const maxVideoWidth = 500;
-    const maxVideoHeight = 420;
-    if (rect.width > maxVideoWidth || rect.height > maxVideoHeight) {
-      return false;
-    }
-
-    // 2. Exclude main watch player containers & Shorts player
-    if (
-      video.closest(
-        'ytd-watch-flexy, ytd-watch-grid, #full-bleed-container, ytd-reel-video-renderer, ytd-shorts'
-      )
-    ) {
-      if (!video.closest('ytd-video-preview, #inline-preview-player')) {
-        return false;
+    // 1. Explicitly ALLOW any preview player video
+    const isPreview = !!video.closest(
+      'ytd-video-preview, #video-preview, #inline-preview-player, ytd-player#inline-player'
+    );
+    if (isPreview) {
+      const previewEl = video.closest('ytd-video-preview');
+      if (previewEl) {
+        this.bindPreviewElement(previewEl as HTMLElement);
       }
-    }
-
-    if (video.closest('#movie_player:not(#inline-preview-player)')) {
-      if (!video.closest('ytd-video-preview, #inline-preview-player')) {
-        return false;
-      }
-    }
-
-    // 3. Only allow YouTube's inline preview player
-    const preview = video.closest('ytd-video-preview') || document.querySelector('ytd-video-preview');
-    if (preview) {
-      this.bindPreviewElement(preview);
       return true;
     }
 
-    const isInline = !!video.closest('#inline-preview-player, ytd-player#inline-player');
-    return isInline;
+    // 2. Exclude YouTube's main watch player containers
+    const isMainWatchPlayer = !!video.closest(
+      'ytd-watch-flexy, ytd-watch-grid, #player-theater-container, #full-bleed-container, #primary #player, #primary #ytd-player'
+    );
+    if (isMainWatchPlayer) {
+      return false;
+    }
+
+    // 3. Exclude Shorts full-screen reel player
+    if (video.closest('ytd-shorts, ytd-reel-video-renderer')) {
+      return false;
+    }
+
+    // 4. Exclude oversized videos (main player exceeds 550x420 when not in a preview container)
+    const rect = video.getBoundingClientRect();
+    if (rect.width > 550 || rect.height > 420) {
+      return false;
+    }
+
+    return true;
   }
 
   scoreVideo(_video: HTMLVideoElement, context: VideoCandidateContext): number | null {
-    if (context.isPlaying && context.intersectionRatio > 0.3) {
-      return 200;
+    if (context.isPlaying) {
+      return 300;
     }
-    return 0;
+    return 100;
   }
 
   onVideoDetected(video: HTMLVideoElement): void {

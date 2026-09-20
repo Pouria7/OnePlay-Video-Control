@@ -105,19 +105,6 @@ class ContentCoordinator {
 
     // 8. Handle runtime messages (e.g. from popup query)
     this.setupMessageListener();
-
-    // 9. Periodic & mousemove verification for dynamic cards / horizontal moving previews
-    window.addEventListener(
-      'mousemove',
-      debounce(() => {
-        this.scheduleSelection();
-      }, 150),
-      { passive: true }
-    );
-
-    setInterval(() => {
-      this.scheduleSelection();
-    }, 500);
   }
 
   /**
@@ -169,7 +156,7 @@ class ContentCoordinator {
     if (this.activeAdapter.onVideoActivated) {
       activeCandidates.forEach((c) => this.activeAdapter.onVideoActivated!(c.element));
     }
-  }, 50);
+  }, 100);
 
   /**
    * Intercepts SPA route changes

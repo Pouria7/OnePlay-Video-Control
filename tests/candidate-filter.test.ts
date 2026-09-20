@@ -73,12 +73,28 @@ describe('CandidateFilter', () => {
       ({ width: 1280, height: 720, left: 0, top: 0, right: 1280, bottom: 720 } as DOMRect);
     expect(adapter.filterVideo(video)).toBe(false);
 
-    // Small video outside preview container
+    // Small video inside main primary player (rejected)
     video.getBoundingClientRect = () =>
       ({ width: 360, height: 202, left: 0, top: 0, right: 360, bottom: 202 } as DOMRect);
+    const primary = document.createElement('div');
+    primary.id = 'primary';
+    const player = document.createElement('div');
+    player.id = 'player';
+    player.appendChild(video);
+    primary.appendChild(player);
+    document.body.appendChild(primary);
     expect(adapter.filterVideo(video)).toBe(false);
 
-    // Small video inside preview container
+    // Small video inside sidebar #secondary (accepted!)
+    document.body.innerHTML = '';
+    const secondary = document.createElement('div');
+    secondary.id = 'secondary';
+    secondary.appendChild(video);
+    document.body.appendChild(secondary);
+    expect(adapter.filterVideo(video)).toBe(true);
+
+    // Small video inside preview container (accepted!)
+    document.body.innerHTML = '';
     const preview = document.createElement('ytd-video-preview');
     preview.appendChild(video);
     document.body.appendChild(preview);

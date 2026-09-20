@@ -5,7 +5,7 @@
  * drag-to-seek, auto-hide timer, and theme styling for a single target video.
  */
 
-import { createShadowUI, ShadowUIElements } from './shadow-ui';
+import { createShadowUI, ShadowUIElements, ICONS } from './shadow-ui';
 import { PositionManager } from './position-manager';
 import { ResolvedConfig } from '../../storage/types';
 import { themeEngine } from '../../themes/theme-engine';
@@ -21,6 +21,12 @@ export class VideoController {
   private isDraggingScrub = false;
   private autoHideTimeout: ReturnType<typeof setTimeout> | null = null;
   private cleanupFns: Array<() => void> = [];
+
+  private mediaRecorder: MediaRecorder | null = null;
+  private isRecordingStream = false;
+  private recordedChunks: BlobPart[] = [];
+  private recordingTimer: ReturnType<typeof setInterval> | null = null;
+  private recordingSeconds = 0;
 
   private onHoverCallback?: (video: HTMLVideoElement, isHovered: boolean, host: HTMLElement) => void;
 
@@ -252,12 +258,58 @@ export class VideoController {
       this.cleanupFns.push(() => item.removeEventListener('click', handleSpeedItemClick));
     });
 
-    // Close menus on outside click
+    // Close menus on outside click or escape
     const handleDocumentClick = () => {
       this.ui.speedMenu.classList.remove('open');
+      this.ui.contextMenu.classList.remove('open');
     };
     document.addEventListener('click', handleDocumentClick);
     this.cleanupFns.push(() => document.removeEventListener('click', handleDocumentClick));
+
+    // Close context menu on click inside shadow container
+    const handleContainerClick = () => {
+      this.ui.contextMenu.classList.remove('open');
+    };
+    this.ui.container.addEventListener('click', handleContainerClick);
+    this.cleanupFns.push(() => this.ui.container.removeEventListener('click', handleContainerClick));
+
+    // Context menu event (Right click on floating controller)
+    const handleContextMenu = (e: MouseEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      this.showContextMenu(e);
+    };
+    this.ui.container.addEventListener('contextmenu', handleContextMenu);
+    this.cleanupFns.push(() => this.ui.container.removeEventListener('contextmenu', handleContextMenu));
+
+    // Download button click in context menu
+    const handleDownloadClick = (e: MouseEvent) => {
+      e.stopPropagation();
+      e.preventDefault();
+      this.ui.contextMenu.classList.remove('open');
+      this.downloadVideo();
+    };
+    this.ui.contextDownloadBtn.addEventListener('click', handleDownloadClick);
+    this.cleanupFns.push(() => this.ui.contextDownloadBtn.removeEventListener('click', handleDownloadClick));
+
+    // Close context menu on window contextmenu if clicked outside
+    const handleWindowContextMenu = (e: MouseEvent) => {
+      if (!this.ui.host.contains(e.target as Node)) {
+        this.ui.contextMenu.classList.remove('open');
+      }
+    };
+    window.addEventListener('contextmenu', handleWindowContextMenu);
+    this.cleanupFns.push(() => window.removeEventListener('contextmenu', handleWindowContextMenu));
+
+    // Close menus on Escape
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        this.ui.speedMenu.classList.remove('open');
+        this.ui.contextMenu.classList.remove('open');
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    this.cleanupFns.push(() => window.removeEventListener('keydown', handleKeyDown));
 
     // 5. Fullscreen Toggle
     const handleFullscreenClick = (e: MouseEvent) => {
@@ -394,12 +446,13 @@ export class VideoController {
 
     this.ui.container.classList.remove('idle');
 
-    // Do not hide if video is paused, dragging scrub, or speed menu is open
+    // Do not hide if video is paused, dragging scrub, speed menu is open, or context menu is open
     if (
       this.video.paused ||
       this.video.ended ||
       this.isDraggingScrub ||
-      this.ui.speedMenu.classList.contains('open')
+      this.ui.speedMenu.classList.contains('open') ||
+      this.ui.contextMenu.classList.contains('open')
     ) {
       return;
     }
@@ -411,12 +464,317 @@ export class VideoController {
     }, this.config.autoHideDelay);
   }
 
+  private showContextMenu(e: MouseEvent): void {
+    this.ui.speedMenu.classList.remove('open');
+    this.resetAutoHideTimer();
+
+    const barRect = this.ui.container.getBoundingClientRect();
+    const relX = e.clientX - barRect.left;
+    const relY = e.clientY - barRect.top;
+
+    // Approximate context menu dimensions
+    const menuWidth = 145;
+
+    // Position horizontally, clamping within controller or reasonable bounds
+    const maxLeft = Math.max(0, barRect.width - menuWidth);
+    const clampedLeft = Math.max(0, Math.min(relX - 10, maxLeft));
+    this.ui.contextMenu.style.left = `${clampedLeft}px`;
+
+    // Position vertically: open upwards if near bottom of viewport, downwards if near top
+    if (barRect.top < 65) {
+      this.ui.contextMenu.style.top = `${relY + 4}px`;
+      this.ui.contextMenu.style.bottom = 'auto';
+    } else {
+      this.ui.contextMenu.style.bottom = `${barRect.height - relY + 4}px`;
+      this.ui.contextMenu.style.top = 'auto';
+    }
+
+    this.ui.contextMenu.classList.add('open');
+  }
+
+  private getBestVideoSource(): string {
+    // 1. Direct currentSrc (if not blob)
+    if (this.video.currentSrc && !this.video.currentSrc.startsWith('blob:')) {
+      return this.video.currentSrc;
+    }
+    // 2. Direct src (if not blob)
+    if (this.video.src && !this.video.src.startsWith('blob:')) {
+      return this.video.src;
+    }
+    // 3. Child <source> elements
+    const sources = this.video.querySelectorAll('source');
+    for (let i = 0; i < sources.length; i++) {
+      const s = sources[i].getAttribute('src') || sources[i].src;
+      if (s && !s.startsWith('blob:')) {
+        return s;
+      }
+    }
+    // 4. Data attributes on video (often used for lazy video loading)
+    const dataSrc =
+      this.video.getAttribute('data-src') ||
+      this.video.getAttribute('data-orig-src') ||
+      this.video.getAttribute('data-video-src');
+    if (dataSrc && !dataSrc.startsWith('blob:')) {
+      return dataSrc;
+    }
+    // 5. OpenGraph / Twitter meta tags
+    const ogVideo =
+      document.querySelector('meta[property="og:video:secure_url"]')?.getAttribute('content') ||
+      document.querySelector('meta[property="og:video"]')?.getAttribute('content') ||
+      document.querySelector('meta[name="twitter:player:stream"]')?.getAttribute('content');
+    if (ogVideo && !ogVideo.startsWith('blob:')) {
+      return ogVideo;
+    }
+
+    return this.video.currentSrc || this.video.src || (sources[0] ? (sources[0].getAttribute('src') || sources[0].src) : '');
+  }
+
+  private async downloadVideo(): Promise<void> {
+    // If currently recording, user clicked "Stop & Save"
+    if (this.isRecordingStream) {
+      this.stopStreamRecording(true);
+      return;
+    }
+
+    const src = this.getBestVideoSource();
+
+    if (!src) {
+      console.warn('[UFVC] No video source found to download.');
+      this.showDownloadFeedback('⚠️ Video source not found');
+      return;
+    }
+
+    let filename = 'video.mp4';
+    try {
+      const urlObj = new URL(src, window.location.href);
+      const pathname = urlObj.pathname;
+      const baseName = pathname.substring(pathname.lastIndexOf('/') + 1);
+      if (
+        baseName &&
+        (baseName.endsWith('.mp4') ||
+          baseName.endsWith('.webm') ||
+          baseName.endsWith('.mkv') ||
+          baseName.endsWith('.mov'))
+      ) {
+        filename = baseName.split('?')[0];
+      } else {
+        const pageTitle = document.title.replace(/[/\\?%*:|"<>]/g, '_').trim() || 'video';
+        filename = `${pageTitle.slice(0, 50)}.mp4`;
+      }
+    } catch {
+      filename = `video_${Date.now()}.mp4`;
+    }
+
+    // Check if it's a blob: URL
+    if (src.startsWith('blob:')) {
+      // Step A: Attempt same-origin fetch of blob URL (works for in-memory static blobs)
+      try {
+        const res = await fetch(src);
+        if (res.ok) {
+          const blob = await res.blob();
+          if (blob.size > 0) {
+            const localBlobUrl = URL.createObjectURL(blob);
+            this.triggerDirectDownload(localBlobUrl, filename);
+            setTimeout(() => URL.revokeObjectURL(localBlobUrl), 15000);
+            return;
+          }
+        }
+      } catch {
+        // fetch on blob URL failed -> this is a MediaSource / MSE live stream (YouTube, etc.)
+      }
+
+      // Step B: Use MediaStreamRecorder for streaming MediaSource video
+      this.startStreamRecording(filename);
+      return;
+    }
+
+    // Direct HTTP/HTTPS URL: Send message to background service worker (chrome.downloads API)
+    try {
+      if (typeof chrome !== 'undefined' && chrome.runtime?.sendMessage) {
+        chrome.runtime.sendMessage(
+          {
+            type: 'DOWNLOAD_VIDEO',
+            url: src,
+            filename
+          },
+          (response) => {
+            if (chrome.runtime.lastError || !response?.success) {
+              this.triggerDirectDownload(src, filename);
+            }
+          }
+        );
+      } else {
+        this.triggerDirectDownload(src, filename);
+      }
+    } catch {
+      this.triggerDirectDownload(src, filename);
+    }
+  }
+
+  private startStreamRecording(defaultFilename: string): void {
+    const stream =
+      (this.video as any).captureStream ? (this.video as any).captureStream() : (this.video as any).mozCaptureStream?.();
+
+    if (!stream || typeof MediaRecorder === 'undefined') {
+      console.warn('[UFVC] Media captureStream is not supported on this video.');
+      this.showDownloadFeedback('⚠️ Direct stream unavailable');
+      return;
+    }
+
+    let mimeType = 'video/webm';
+    if (MediaRecorder.isTypeSupported('video/mp4;codecs=avc1,mp4a.40.2')) {
+      mimeType = 'video/mp4;codecs=avc1,mp4a.40.2';
+    } else if (MediaRecorder.isTypeSupported('video/mp4')) {
+      mimeType = 'video/mp4';
+    } else if (MediaRecorder.isTypeSupported('video/webm;codecs=vp9,opus')) {
+      mimeType = 'video/webm;codecs=vp9,opus';
+    } else if (MediaRecorder.isTypeSupported('video/webm')) {
+      mimeType = 'video/webm';
+    }
+
+    try {
+      this.recordedChunks = [];
+      this.mediaRecorder = new MediaRecorder(stream, { mimeType });
+    } catch (err) {
+      console.warn('[UFVC] Failed to initialize MediaRecorder on stream:', err);
+      this.showDownloadFeedback('⚠️ Stream protected (CORS)');
+      return;
+    }
+
+    this.isRecordingStream = true;
+    this.recordingSeconds = 0;
+
+    // Show indicator on floating bar
+    this.ui.recIndicator.style.display = 'inline-flex';
+    this.ui.recTime.textContent = '0:00';
+
+    // Update context download button
+    this.updateDownloadBtnRecording(true);
+
+    this.mediaRecorder.ondataavailable = (e) => {
+      if (e.data && e.data.size > 0) {
+        this.recordedChunks.push(e.data);
+      }
+    };
+
+    this.mediaRecorder.onstop = () => {
+      if (this.recordedChunks.length > 0) {
+        const blob = new Blob(this.recordedChunks, { type: mimeType });
+        const ext = mimeType.includes('mp4') ? 'mp4' : 'webm';
+        const recFilename = `${defaultFilename.replace(/\.[^/.]+$/, '')}.${ext}`;
+        const url = URL.createObjectURL(blob);
+        this.triggerDirectDownload(url, recFilename);
+        setTimeout(() => URL.revokeObjectURL(url), 20000);
+        this.showDownloadFeedback('✅ Video Saved!');
+      }
+      this.cleanupRecording();
+    };
+
+    // Listen for video ended event to automatically stop and save
+    const onEnded = () => {
+      if (this.isRecordingStream) {
+        this.stopStreamRecording(true);
+      }
+    };
+    this.video.addEventListener('ended', onEnded, { once: true });
+
+    // Ensure video is playing so frames are generated
+    if (this.video.paused) {
+      try {
+        const playPromise = this.video.play();
+        if (playPromise && typeof playPromise.catch === 'function') {
+          playPromise.catch(() => {});
+        }
+      } catch {}
+    }
+
+    // Start recorder with chunk slicing
+    this.mediaRecorder.start(250);
+
+    // Update timer
+    this.recordingTimer = setInterval(() => {
+      this.recordingSeconds++;
+      const timeStr = formatTime(this.recordingSeconds);
+      this.ui.recTime.textContent = timeStr;
+      this.updateDownloadBtnRecording(true);
+    }, 1000);
+  }
+
+  private stopStreamRecording(shouldSave = true): void {
+    if (!this.isRecordingStream || !this.mediaRecorder) return;
+    this.isRecordingStream = false;
+
+    if (!shouldSave) {
+      this.recordedChunks = [];
+    }
+
+    try {
+      if (this.mediaRecorder.state !== 'inactive') {
+        this.mediaRecorder.stop();
+      }
+    } catch (err) {
+      console.error('[UFVC] Error stopping recorder:', err);
+    }
+
+    this.cleanupRecording();
+  }
+
+  private cleanupRecording(): void {
+    this.isRecordingStream = false;
+    if (this.recordingTimer) {
+      clearInterval(this.recordingTimer);
+      this.recordingTimer = null;
+    }
+    this.ui.recIndicator.style.display = 'none';
+    this.updateDownloadBtnRecording(false);
+  }
+
+  private updateDownloadBtnRecording(isRec: boolean): void {
+    if (isRec) {
+      this.ui.contextDownloadBtn.innerHTML = `
+        <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><rect x="6" y="6" width="12" height="12" rx="2" fill="#ef4444"/></svg>
+        <span>Stop & Save (${formatTime(this.recordingSeconds)})</span>
+      `;
+    } else {
+      this.ui.contextDownloadBtn.innerHTML = `
+        ${ICONS.download}
+        <span>Download Video</span>
+      `;
+    }
+  }
+
+  private showDownloadFeedback(message: string): void {
+    this.ui.contextDownloadBtn.innerHTML = `<span>${message}</span>`;
+    setTimeout(() => {
+      this.updateDownloadBtnRecording(false);
+    }, 2500);
+  }
+
+  private triggerDirectDownload(url: string, filename: string): void {
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.target = '_blank';
+    a.rel = 'noopener noreferrer';
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => {
+      if (a.parentNode) {
+        a.parentNode.removeChild(a);
+      }
+    }, 100);
+  }
+
   /**
    * Destroys the controller, removing host from DOM and unbinding all events
    */
   destroy(): void {
     if (this.isDestroyed) return;
     this.isDestroyed = true;
+
+    if (this.isRecordingStream) {
+      this.stopStreamRecording(false);
+    }
 
     if (this.autoHideTimeout) {
       clearTimeout(this.autoHideTimeout);

@@ -26,14 +26,29 @@ A robust, website-independent floating video controller for HTML5 `<video>` elem
 
 - **Website-Independent UI**: The floating controller is never injected as a child of the host website's player container. It mounts at the top-level document with an open **Shadow DOM** and fixed viewport positioning.
 - **Immune to Overlay Hijacking**: Operates at maximum `z-index: 2147483647` with direct pointer-events capture. Transparent tap-to-mute or tap-to-pause overlays on Instagram Web cannot block controller clicks.
+- **HTML Context Menu & Video Downloader**:
+  - Right-click the floating controller to open a custom, sleek HTML context menu inside Shadow DOM.
+  - Download video feature with media URL extraction (`currentSrc`, `src`, `<source>`) powered by Chrome's `downloads` API with fallback.
+- **Controls Layout Modes**:
+  - **Full Layout**: Complete control bar with interactive scrub bar, time display, volume slider, speed picker, and fullscreen.
+  - **Minimal Pill Layout**: Ultra-compact $136\times 34$px floating pill with essential buttons (Seek -5s, Play/Pause, Seek +5s) and a non-intrusive slim progress bar running underneath.
+  - **Responsive 2-Row Mode**: Automatically switches to a 2-row layout on narrow videos (<340px) so controls never get squished.
+- **Flexible Controller Docking Positions**:
+  - Bottom Inside (`bottom-inside`), Bottom Outside (`bottom-outside`), Top Inside (`top-inside`), Top Outside (`top-outside`).
+- **Expanded Playback Speeds**:
+  - Quick-switch playback rate from 0.5x up to **3x** (0.5x, 0.75x, 1x, 1.25x, 1.5x, 1.75x, 2x, 2.5x, 3x).
 - **Intelligent Video Selection**:
   - Automatically identifies candidate videos using rendered dimensions (`getBoundingClientRect()`).
   - Prioritizes currently playing, audible videos over muted videos.
   - Implements the **70% Viewport Visibility Rule**: multiple videos with $\ge 70\%$ intersection ratio can simultaneously receive controllers.
 - **Zero Polling & Battery-Friendly**: Coordinates updates using `MutationObserver`, `IntersectionObserver`, `ResizeObserver`, media events, and `requestAnimationFrame` throttled scroll/resize tracking. No infinite animation loops.
 - **Clean Adapter System**: Dedicated out-of-the-box adapters for **Instagram Web** and **YouTube** (previews/cards), completely isolated from the generic engine.
-- **4 Built-in Themes**: `minimal` (default), `minimal-dark`, `glass` (glassmorphism with backdrop blur), and `accent-blue`.
-- **Keyboard Shortcuts**: Space (Play/Pause), Left/Right or J/L (Seek $\pm 5$s), Up/Down (Volume $\pm 10\%$) with strict input guarding that automatically suspends when typing in editable fields.
+- **4 Built-in Themes**: `classic-dark` (default), `midnight` (obsidian dark), `glass` (glassmorphism with backdrop blur), and `ocean-blue` (cyber neon blue).
+- **Fully Customizable Shortcuts & Key Combinations**:
+  - Interactive shortcut recorder in Options & Popup.
+  - Supports single keys and combination shortcuts (`Ctrl+Shift+P`, `Alt+M`, etc.).
+  - Covers Play/Pause, Seek $\pm 5$s, Volume $\pm 5\%$, Mute/Unmute toggle, and Fullscreen.
+  - Strict input guarding that automatically suspends when typing in editable fields.
 
 ---
 
@@ -61,11 +76,12 @@ Host Website
 │ └── <div class="ufvc-controller-root">                 │
 │     └── ShadowRoot (open)                              │
 │         ├── Isolated CSS Reset (:host { all: initial })│
+│         ├── HTML Context Menu (Right Click)            │
 │         └── Fixed Floating Control Bar (z: 2147483647) │
 └────────────────────────────────────────────────────────┘
 ```
 
-The controller monitors the target video's viewport bounding rect and positions its own floating UI directly over the bottom of the video, completely isolated from any parent container overflow clipping (`overflow: hidden`) or layout reflows.
+The controller monitors the target video's viewport bounding rect and positions its own floating UI directly relative to the video, completely isolated from any parent container overflow clipping (`overflow: hidden`) or layout reflows.
 
 ---
 
@@ -80,7 +96,7 @@ DISCOVERED ──► TRACKED ──► CANDIDATE ──► ACTIVE ──► INAC
 
 1. **DISCOVERED**: Detected by `VideoObserver` (`MutationObserver` or initial scan).
 2. **TRACKED**: Added to `VideoRegistry`. `IntersectionObserver`, `ResizeObserver`, and media listeners attached.
-3. **CANDIDATE**: Passes candidate filter rules (rendered dimensions $\ge 160\times 120$px, connected to DOM, visible in CSS).
+3. **CANDIDATE**: Passes candidate filter rules (rendered dimensions $\ge 160\times 120$px, connected to DOM, visible in CSS, passes site adapter `filterVideo` hook).
 4. **ACTIVE**: Selected by `VideoSelector`. Floating controller mounted.
 5. **INACTIVE**: Temporarily hidden or controller removed when out of viewport or paused below thresholds.
 6. **REMOVED**: Element disconnected from the DOM.
@@ -124,7 +140,9 @@ export interface SiteAdapter {
   - Zero dependency on Instagram's obfuscated class names or React tree.
 - **YouTube Adapter** (`src/content/adapters/youtube-adapter.ts`):
   - Targets `youtube.com`.
-  - Configures relaxed dimensions ($120\times 80$px) to support hover preview video cards.
+  - Excludes the main watch player (`#primary`) via container verification and maximum dimension boundary ($500\times 420$px) so native YouTube controls are preserved.
+  - Selectively activates on sidebar recommendation video cards (`#secondary`, `#related`) and feed inline preview cards (`ytd-video-preview`).
+  - Capture-phase `mouseleave` suppression on preview elements ensures hovering the controller doesn't dismiss preview playback.
 - **Generic Adapter** (`src/content/adapters/generic-adapter.ts`):
   - Universal fallback for any other web domain.
 
@@ -169,22 +187,26 @@ The controller uses CSS custom variables inside the Shadow DOM:
 
 ### Built-in Themes
 
-- **`minimal`** (Default): Non-intrusive dark semi-transparent bar (`rgba(18, 20, 24, 0.76)`).
-- **`minimal-dark`**: Obsidian high-contrast theme (`rgba(8, 8, 10, 0.92)`).
+- **`classic-dark`** (Default): Non-intrusive dark semi-transparent bar (`rgba(18, 20, 24, 0.76)`).
+- **`midnight`**: Obsidian high-contrast theme (`rgba(8, 8, 10, 0.92)`).
 - **`glass`**: Modern frosted glassmorphism with `backdrop-filter: blur(16px) saturate(180%)`.
-- **`accent-blue`**: Cybernetic neon blue accents on dark navy background.
+- **`ocean-blue`**: Cybernetic neon blue accents on dark navy background.
 
 ---
 
 ## Keyboard Shortcuts
 
-| Key | Action | Description |
+All shortcuts are fully customizable via the Options Dashboard and Popup recorder. Key combinations (e.g. `Ctrl+Alt+M`) are supported.
+
+| Default Key | Action | Description |
 |---|---|---|
 | <kbd>Space</kbd> | Play / Pause | Toggles playback of the primary active video |
-| <kbd>←</kbd> or <kbd>J</kbd> | Seek Backward | Jumps backward 5 seconds (configurable) |
-| <kbd>→</kbd> or <kbd>L</kbd> | Seek Forward | Jumps forward 5 seconds (configurable) |
-| <kbd>↑</kbd> | Volume Up | Increases volume by +10% |
-| <kbd>↓</kbd> | Volume Down | Decreases volume by -10% |
+| <kbd>←</kbd> | Seek Backward | Jumps backward by configured seek interval (default 5s) |
+| <kbd>→</kbd> | Seek Forward | Jumps forward by configured seek interval (default 5s) |
+| <kbd>↑</kbd> | Volume Up | Increases volume by +5% |
+| <kbd>↓</kbd> | Volume Down | Decreases volume by -5% |
+| <kbd>M</kbd> | Mute / Unmute | Toggles audio mute state |
+| <kbd>F</kbd> | Toggle Fullscreen | Enters or exits fullscreen mode |
 
 > **Typing Guard**: Shortcuts are automatically disabled when focus is inside an `<input>`, `<textarea>`, `<select>`, `[contenteditable]`, or inside editable shadow trees.
 
@@ -340,14 +362,22 @@ universal-floating-video-controls/
 │   │   ├── shortcuts/         # Keyboard shortcut dispatcher
 │   │   ├── plugins/           # Future feature plugin contracts
 │   │   └── index.ts           # Content coordinator
+│   ├── options/
+│   │   ├── options.html       # Full options & settings dashboard
+│   │   ├── options.css        # Dashboard styling
+│   │   └── options.ts         # Options logic & shortcuts recorder
 │   └── popup/
-│       ├── popup.html         # Extension popup
+│       ├── popup.html         # Quick settings popup
 │       ├── popup.css          # Popup styling
 │       └── popup.ts           # Popup settings manager
 ├── tests/                     # Vitest unit tests
 │   ├── candidate-filter.test.ts
 │   ├── video-scorer.test.ts
 │   ├── video-selector.test.ts
+│   ├── video-registry.test.ts
+│   ├── context-menu.test.ts
+│   ├── shortcuts.test.ts
+│   ├── geometry.test.ts
 │   ├── config-precedence.test.ts
 │   └── url-matching.test.ts
 └── dist/                      # Final unpackable Chrome extension

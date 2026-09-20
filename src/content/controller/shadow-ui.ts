@@ -32,6 +32,10 @@ export interface ShadowUIElements {
   seekBackBtn: HTMLButtonElement;
   seekForwardBtn: HTMLButtonElement;
   miniProgressBar: HTMLElement;
+  contextMenu: HTMLElement;
+  contextDownloadBtn: HTMLButtonElement;
+  recIndicator: HTMLElement;
+  recTime: HTMLElement;
 }
 
 export const ICONS = {
@@ -42,7 +46,9 @@ export const ICONS = {
   volumeHigh: `<svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>`,
   volumeLow: `<svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M18.5 12c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM5 9v6h4l5 5V4L9 9H5z"/></svg>`,
   volumeMute: `<svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z"/></svg>`,
-  fullscreen: `<svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>`
+  fullscreen: `<svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>`,
+  download: `<svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM17 13l-5 5-5-5h3V9h4v4h3z"/></svg>`,
+  stopRecord: `<svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><rect x="6" y="6" width="12" height="12" rx="2" fill="#ef4444"/></svg>`
 };
 
 export function createShadowUI(): ShadowUIElements {
@@ -159,7 +165,6 @@ export function createShadowUI(): ShadowUIElements {
       justify-content: center;
       gap: 4px;
       border-radius: var(--ufvc-radius, 10px);
-      overflow: hidden;
     }
 
     .ufvc-bar.minimal-mode .ufvc-row-top,
@@ -439,6 +444,83 @@ export function createShadowUI(): ShadowUIElements {
       font-weight: 700;
     }
 
+    /* HTML Context Menu */
+    .ufvc-context-menu {
+      display: none;
+      position: absolute;
+      background: var(--ufvc-bg, rgba(18, 20, 24, 0.95));
+      border: var(--ufvc-border, 1px solid rgba(255, 255, 255, 0.15));
+      border-radius: 8px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+      padding: 4px;
+      flex-direction: column;
+      gap: 2px;
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      z-index: 100;
+      min-width: 140px;
+    }
+
+    .ufvc-context-menu.open {
+      display: flex;
+    }
+
+    .ufvc-context-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: transparent;
+      border: none;
+      color: #e5e7eb;
+      font-size: 12px;
+      font-weight: 500;
+      padding: 6px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      text-align: left;
+      width: 100%;
+      white-space: nowrap;
+      transition: background 0.12s ease, color 0.12s ease;
+    }
+
+    .ufvc-context-item:hover {
+      background: rgba(255, 255, 255, 0.15);
+      color: #ffffff;
+    }
+
+    .ufvc-context-item:active {
+      background: rgba(255, 255, 255, 0.25);
+    }
+
+    .ufvc-context-item svg {
+      flex-shrink: 0;
+    }
+
+    /* Stream Recording Indicator */
+    .ufvc-rec-indicator {
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      font-size: 10px;
+      font-weight: 700;
+      color: #ef4444;
+      background: rgba(239, 68, 68, 0.16);
+      border: 1px solid rgba(239, 68, 68, 0.45);
+      padding: 1px 5px;
+      border-radius: 4px;
+      flex-shrink: 0;
+    }
+
+    .ufvc-rec-dot {
+      font-size: 10px;
+      animation: ufvc-pulse 1s infinite;
+    }
+
+    @keyframes ufvc-pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.2; }
+    }
+
     /* Auto-hide fade */
     .ufvc-bar.idle {
       opacity: 0 !important;
@@ -460,6 +542,10 @@ export function createShadowUI(): ShadowUIElements {
         </div>
         <div class="ufvc-scrub-thumb"></div>
         <div class="ufvc-time-tooltip">0:00</div>
+      </div>
+
+      <div class="ufvc-rec-indicator" style="display: none;" title="Recording stream in progress">
+        <span class="ufvc-rec-dot">●</span> <span>REC</span> <span class="ufvc-rec-time">0:00</span>
       </div>
 
       <div class="ufvc-time">
@@ -515,6 +601,13 @@ export function createShadowUI(): ShadowUIElements {
     <div class="ufvc-mini-progress">
       <div class="ufvc-mini-progress-bar"></div>
     </div>
+
+    <div class="ufvc-context-menu" role="menu">
+      <button class="ufvc-context-item ufvc-context-download" role="menuitem" title="Download Video">
+        ${ICONS.download}
+        <span>Download Video</span>
+      </button>
+    </div>
   `;
 
   shadowRoot.appendChild(container);
@@ -545,6 +638,10 @@ export function createShadowUI(): ShadowUIElements {
     fullscreenBtn: container.querySelector('.ufvc-fullscreen-btn') as HTMLButtonElement,
     seekBackBtn: container.querySelector('.ufvc-seek-back-btn') as HTMLButtonElement,
     seekForwardBtn: container.querySelector('.ufvc-seek-forward-btn') as HTMLButtonElement,
-    miniProgressBar: container.querySelector('.ufvc-mini-progress-bar') as HTMLElement
+    miniProgressBar: container.querySelector('.ufvc-mini-progress-bar') as HTMLElement,
+    contextMenu: container.querySelector('.ufvc-context-menu') as HTMLElement,
+    contextDownloadBtn: container.querySelector('.ufvc-context-download') as HTMLButtonElement,
+    recIndicator: container.querySelector('.ufvc-rec-indicator') as HTMLElement,
+    recTime: container.querySelector('.ufvc-rec-time') as HTMLElement
   };
 }

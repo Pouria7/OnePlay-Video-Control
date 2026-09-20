@@ -251,15 +251,20 @@ export class VideoRegistry {
   }
 
   /**
+   * Checks if an element is currently in the registry
+   */
+  has(video: HTMLVideoElement): boolean {
+    return this.records.has(video);
+  }
+
+  /**
    * Returns all currently candidate-eligible tracked videos
    */
   getCandidates(): TrackedVideo[] {
     const list: TrackedVideo[] = [];
     for (const [video, record] of this.records.entries()) {
-      // Re-verify against custom adapter filter if present
-      if (this.customFilter && !this.customFilter(video)) {
-        record.state = VideoLifecycleState.INACTIVE;
-        record.score = 0;
+      if (!video.isConnected) {
+        this.unregister(video);
         continue;
       }
       if (

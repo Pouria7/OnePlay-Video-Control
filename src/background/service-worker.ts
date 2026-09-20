@@ -42,5 +42,38 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     sendResponse({ status: 'PONG', version: chrome.runtime.getManifest().version });
     return true;
   }
+
+  if (message.type === 'DOWNLOAD_VIDEO') {
+    const url = message.url;
+    const filename = message.filename || `video_${Date.now()}.mp4`;
+
+    // Background service worker cannot download page-scoped blob: URLs across origins
+    if (typeof url === 'string' && url.startsWith('blob:')) {
+      sendResponse({ success: false, isBlob: true, error: 'Blob URLs must be downloaded in tab context' });
+      return true;
+    }
+
+    if (chrome.downloads) {
+      chrome.downloads.download(
+        {
+          url,
+          filename,
+          saveAs: true
+        },
+        (downloadId) => {
+          if (chrome.runtime.lastError) {
+            sendResponse({ success: false, error: chrome.runtime.lastError.message });
+          } else {
+            sendResponse({ success: true, downloadId });
+          }
+        }
+      );
+      return true;
+    } else {
+      sendResponse({ success: false, error: 'Downloads API unavailable' });
+      return true;
+    }
+  }
+
   return false;
 });
