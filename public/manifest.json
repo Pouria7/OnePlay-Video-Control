@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "Universal Floating Video Controls",
+  "name": "Universal Video Controls",
   "version": "1.0.0",
-  "description": "Universal floating video controls for HTML5 videos across the web, designed for resilient overlay-independent playback.",
+  "description": "Universal video controls for HTML5 videos across the web, designed for resilient overlay-independent playback.",
   "icons": {
     "16": "icons/icon-16.png",
     "48": "icons/icon-48.png",

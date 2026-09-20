@@ -1,5 +1,5 @@
 /**
- * Core type definitions for Universal Floating Video Controls
+ * Core type definitions for Universal Video Controls
  */
 
 export enum VideoLifecycleState {

@@ -1,5 +1,5 @@
 /**
- * Popup Script for Universal Floating Video Controls
+ * Popup Script for Universal Video Controls
  */
 
 import { storageManager } from '../storage/storage-manager';

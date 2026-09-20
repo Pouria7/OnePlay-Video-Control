@@ -1,38 +1,47 @@
-# Universal Floating Video Controls (Chrome Extension - Manifest V3)
+# Universal Video Controls (Chrome Extension - Manifest V3)
 
-A robust, website-independent floating video controller for HTML5 `<video>` elements across the web. Designed to remain completely resilient against host-site layout modifications, CSS class obfuscation, and transparent click-blocking overlay layers (such as those on Instagram Web).
+A robust, website-independent video controller for HTML5 `<video>` elements across the web. Designed to remain completely resilient against host-site layout modifications, CSS class obfuscation, and transparent click-blocking overlay layers (such as those on Instagram Web).
+
+> **Note on Naming & Purpose**: Universal Video Controls provides an on-video control overlay bar directly docked to HTML5 videos. It does **not** detach or float the video element itself (avoiding the confusion associated with "Picture-in-Picture" or "floating video players"). It gives you full playback control, video downloading, and live stream recording without modifying host page structures.
 
 ---
 
 ## Table of Contents
 
 1. [Key Features](#key-features)
-2. [Core Architecture & Design Principle](#core-architecture--design-principle)
-3. [Detection & Selection Engine](#detection--selection-engine)
-4. [Site Adapter Architecture](#site-adapter-architecture)
-5. [Configuration & Precedence Order](#configuration--precedence-order)
-6. [Themes System](#themes-system)
-7. [Keyboard Shortcuts](#keyboard-shortcuts)
-8. [Installation & Development](#installation--development)
-9. [Loading Unpacked Extension in Chrome](#loading-unpacked-extension-in-chrome)
-10. [How to Add a New Site Adapter](#how-to-add-a-new-site-adapter)
-11. [How to Add a New Theme](#how-to-add-a-new-theme)
-12. [Future Feature Plugins](#future-feature-plugins)
-13. [Project Directory Structure](#project-directory-structure)
+2. [Video Downloader & Live Stream Recorder](#video-downloader--live-stream-recorder)
+3. [Core Architecture & Design Principle](#core-architecture--design-principle)
+4. [Detection & Selection Engine](#detection--selection-engine)
+5. [Site Adapter Architecture](#site-adapter-architecture)
+6. [Configuration & Precedence Order](#configuration--precedence-order)
+7. [Themes System](#themes-system)
+8. [Keyboard Shortcuts](#keyboard-shortcuts)
+9. [Installation & Development](#installation--development)
+10. [Loading Unpacked Extension in Chrome](#loading-unpacked-extension-in-chrome)
+11. [How to Add a New Site Adapter](#how-to-add-a-new-site-adapter)
+12. [How to Add a New Theme](#how-to-add-a-new-theme)
+13. [Future Feature Plugins](#future-feature-plugins)
+14. [Project Directory Structure](#project-directory-structure)
 
 ---
 
 ## Key Features
 
-- **Website-Independent UI**: The floating controller is never injected as a child of the host website's player container. It mounts at the top-level document with an open **Shadow DOM** and fixed viewport positioning.
-- **Immune to Overlay Hijacking**: Operates at maximum `z-index: 2147483647` with direct pointer-events capture. Transparent tap-to-mute or tap-to-pause overlays on Instagram Web cannot block controller clicks.
-- **HTML Context Menu & Video Downloader**:
-  - Right-click the floating controller to open a custom, sleek HTML context menu inside Shadow DOM.
-  - Download video feature with media URL extraction (`currentSrc`, `src`, `<source>`) powered by Chrome's `downloads` API with fallback.
+- **Website-Independent UI**: The controller is never injected as a child of the host website's player container. It mounts at the top-level document with an open **Shadow DOM** and fixed viewport positioning.
+- **Immune to Overlay Hijacking**: Operates at maximum `z-index: 2147483647` with direct pointer-events capture. Transparent tap-to-mute or tap-to-pause overlays (e.g. on Instagram Web) cannot block controller clicks.
+- **HTML Context Menu**:
+  - Right-click anywhere on the controller bar to open a custom, sleek HTML context menu inside Shadow DOM.
+  - Quick action menu for video downloading and stream recording.
+- **Video Downloader & Live Stream Recorder**:
+  - **Direct Download**: Extracts media URLs (`currentSrc`, `src`, `<source>`, `data-src`, `og:video`) and downloads via Chrome's `downloads` API.
+  - **Static Blob Download**: Fetches and downloads same-origin static `blob:` URLs directly.
+  - **MSE / Live Stream Recording**: Captures segmented streaming media (`blob:` URLs from MediaSource Extensions, DASH, HLS) in real-time via `HTMLVideoElement.captureStream()` and `MediaRecorder`.
+  - **Live Recording Badge**: Displays a glowing `● REC 0:00` indicator on the controller bar while recording.
+  - **Auto & Manual Save**: Recording automatically finalizes and triggers download when the video finishes, or can be stopped manually at any moment with the stop button.
 - **Controls Layout Modes**:
   - **Full Layout**: Complete control bar with interactive scrub bar, time display, volume slider, speed picker, and fullscreen.
-  - **Minimal Pill Layout**: Ultra-compact $136\times 34$px floating pill with essential buttons (Seek -5s, Play/Pause, Seek +5s) and a non-intrusive slim progress bar running underneath.
-  - **Responsive 2-Row Mode**: Automatically switches to a 2-row layout on narrow videos (<340px) so controls never get squished.
+  - **Minimal Pill Layout**: Ultra-compact $136\times 34$px pill with essential buttons (Seek -5s, Play/Pause, Seek +5s) and a non-intrusive slim progress bar running underneath.
+  - **Responsive 2-Row Mode**: Automatically adapts to a 2-row layout on narrow videos (<340px) so controls never get squished.
 - **Flexible Controller Docking Positions**:
   - Bottom Inside (`bottom-inside`), Bottom Outside (`bottom-outside`), Top Inside (`top-inside`), Top Outside (`top-outside`).
 - **Expanded Playback Speeds**:
@@ -41,14 +50,58 @@ A robust, website-independent floating video controller for HTML5 `<video>` elem
   - Automatically identifies candidate videos using rendered dimensions (`getBoundingClientRect()`).
   - Prioritizes currently playing, audible videos over muted videos.
   - Implements the **70% Viewport Visibility Rule**: multiple videos with $\ge 70\%$ intersection ratio can simultaneously receive controllers.
-- **Zero Polling & Battery-Friendly**: Coordinates updates using `MutationObserver`, `IntersectionObserver`, `ResizeObserver`, media events, and `requestAnimationFrame` throttled scroll/resize tracking. No infinite animation loops.
-- **Clean Adapter System**: Dedicated out-of-the-box adapters for **Instagram Web** and **YouTube** (previews/cards), completely isolated from the generic engine.
+- **Zero Polling & Battery-Friendly**: Coordinates updates using `MutationObserver`, `IntersectionObserver`, `ResizeObserver`, media events, and `requestAnimationFrame` throttled tracking. Free of repetitive `setInterval` or mousemove polling loops.
+- **Clean Adapter System**: Dedicated adapters for **Instagram Web** and **YouTube** (previews/cards), completely isolated from the generic engine.
 - **4 Built-in Themes**: `classic-dark` (default), `midnight` (obsidian dark), `glass` (glassmorphism with backdrop blur), and `ocean-blue` (cyber neon blue).
 - **Fully Customizable Shortcuts & Key Combinations**:
   - Interactive shortcut recorder in Options & Popup.
   - Supports single keys and combination shortcuts (`Ctrl+Shift+P`, `Alt+M`, etc.).
   - Covers Play/Pause, Seek $\pm 5$s, Volume $\pm 5\%$, Mute/Unmute toggle, and Fullscreen.
   - Strict input guarding that automatically suspends when typing in editable fields.
+
+---
+
+## Video Downloader & Live Stream Recorder
+
+Many modern web platforms (YouTube, Twitter/X, Twitch, Instagram, etc.) deliver video using MediaSource Extensions (MSE) or chunked streams (HLS/DASH). In these cases, the video element's `src` is an ephemeral internal pointer like `blob:https://...` rather than a direct downloadable file.
+
+Universal Video Controls solves this with a **3-tier download engine**:
+
+```text
+User clicks Download (Context Menu)
+                │
+                ▼
+      Is src an http(s) URL?
+       ├── YES ──► Chrome downloads API / <a> fallback download
+       └── NO  (it's a blob: URL or segmented stream)
+                │
+                ▼
+       Try static blob fetch
+       ├── SUCCESS (size > 10KB) ──► Direct blob download
+       └── Segmented MSE Stream (YouTube, Twitch, etc.)
+                │
+                ▼
+       Trigger Stream Recording Engine
+       ├── HTMLVideoElement.captureStream()
+       ├── MediaRecorder (video/webm;codecs=vp9,opus or mp4)
+       ├── Display ● REC 0:00 live badge on controller
+       └── Auto-stop on video completion or manual stop button
+                │
+                ▼
+       Download final compiled video file
+```
+
+### How to Use:
+1. **Right-Click Controller**: Right-click the controller bar on any video to open the context menu.
+2. **Click Download**:
+   - For static videos (direct files), download begins immediately.
+   - For streaming/blob videos, recording begins immediately:
+     - The controller bar displays a glowing red **`● REC 0:00`** timer badge.
+     - A **Stop & Save** button appears on the controller.
+     - If the video is paused, it automatically starts playing to capture the stream.
+3. **Save Video**:
+   - Let the video finish: when playback ends, the recording automatically stops and saves.
+   - Or click the **Stop & Save** button at any time to save the captured portion.
 
 ---
 
@@ -77,11 +130,12 @@ Host Website
 │     └── ShadowRoot (open)                              │
 │         ├── Isolated CSS Reset (:host { all: initial })│
 │         ├── HTML Context Menu (Right Click)            │
-│         └── Fixed Floating Control Bar (z: 2147483647) │
+│         ├── Real-time REC Indicator (● REC 0:00)       │
+│         └── Fixed Control Bar Overlay (z: 2147483647)  │
 └────────────────────────────────────────────────────────┘
 ```
 
-The controller monitors the target video's viewport bounding rect and positions its own floating UI directly relative to the video, completely isolated from any parent container overflow clipping (`overflow: hidden`) or layout reflows.
+The controller monitors the target video's viewport bounding rect and positions its own UI directly relative to the video, completely isolated from any parent container overflow clipping (`overflow: hidden`) or layout reflows.
 
 ---
 
@@ -97,7 +151,7 @@ DISCOVERED ──► TRACKED ──► CANDIDATE ──► ACTIVE ──► INAC
 1. **DISCOVERED**: Detected by `VideoObserver` (`MutationObserver` or initial scan).
 2. **TRACKED**: Added to `VideoRegistry`. `IntersectionObserver`, `ResizeObserver`, and media listeners attached.
 3. **CANDIDATE**: Passes candidate filter rules (rendered dimensions $\ge 160\times 120$px, connected to DOM, visible in CSS, passes site adapter `filterVideo` hook).
-4. **ACTIVE**: Selected by `VideoSelector`. Floating controller mounted.
+4. **ACTIVE**: Selected by `VideoSelector`. Controller mounted.
 5. **INACTIVE**: Temporarily hidden or controller removed when out of viewport or paused below thresholds.
 6. **REMOVED**: Element disconnected from the DOM.
 7. **CLEANED**: All event listeners, observers, and controller instances destroyed, enabling garbage collection.
@@ -140,8 +194,10 @@ export interface SiteAdapter {
   - Zero dependency on Instagram's obfuscated class names or React tree.
 - **YouTube Adapter** (`src/content/adapters/youtube-adapter.ts`):
   - Targets `youtube.com`.
-  - Excludes the main watch player (`#primary`) via container verification and maximum dimension boundary ($500\times 420$px) so native YouTube controls are preserved.
-  - Selectively activates on sidebar recommendation video cards (`#secondary`, `#related`) and feed inline preview cards (`ytd-video-preview`).
+  - Distinguishes main watch player vs. preview cards:
+    - Excludes the main player (`ytd-watch-flexy`, `#player-theater-container`, `#movie_player`) so YouTube's rich native player controls are preserved without overlay clutter.
+    - Note on sidebar recommendations on `/watch`: YouTube sidebar thumbnails are animated WebP storyboards (`<img>`), not `<video>` elements.
+    - Activates on inline preview cards across home/feed/search (`ytd-video-preview`, `#video-preview`).
   - Capture-phase `mouseleave` suppression on preview elements ensures hovering the controller doesn't dismiss preview playback.
 - **Generic Adapter** (`src/content/adapters/generic-adapter.ts`):
   - Universal fallback for any other web domain.
@@ -238,10 +294,11 @@ npm run build
 ```
 
 This bundles all modules into `dist/`, including:
-- `dist/manifest.json` (Manifest V3)
+- `dist/manifest.json` (Manifest V3 with `storage` and `downloads` permissions)
 - `dist/background/service-worker.js` (ES module service worker)
 - `dist/content/index.js` (Self-contained IIFE content script)
 - `dist/popup/popup.html`, `dist/popup/popup.js`, `dist/popup/popup.css`
+- `dist/options/options.html`, `dist/options/options.js`, `dist/options/options.css`
 - `dist/icons/` (Valid PNG icons for 16, 48, and 128px)
 
 ---
@@ -253,7 +310,7 @@ This bundles all modules into `dist/`, including:
 3. Click the **Load unpacked** button in the top left.
 4. Select the `dist/` directory inside this project:
    `d:\Workspace\1 My Github Projects\Extentions\CD Video Player\dist`
-5. The extension **"Universal Floating Video Controls"** will appear in your extensions list.
+5. The extension **"Universal Video Controls"** will appear in your extensions list.
 6. Pin the extension icon to your toolbar and visit Instagram or YouTube to test!
 
 ---
@@ -335,7 +392,7 @@ The extension is designed with a provider interface (`src/content/plugins/featur
 ## Project Directory Structure
 
 ```text
-universal-floating-video-controls/
+universal-video-controls/
 ├── manifest.json              # Source Manifest V3
 ├── package.json               # Dependencies & scripts
 ├── tsconfig.json              # TypeScript strict configuration
@@ -354,11 +411,11 @@ universal-floating-video-controls/
 │   ├── storage/               # Storage schemas & precedence resolution
 │   ├── themes/                # Theme engine & built-in themes
 │   ├── background/
-│   │   └── service-worker.ts  # Manifest V3 service worker
+│   │   └── service-worker.ts  # Manifest V3 service worker (downloads & lifecycle)
 │   ├── content/
 │   │   ├── detection/         # Registry, candidate filter, scorer, selector
 │   │   ├── adapters/          # Site adapters (Instagram, YouTube, Generic)
-│   │   ├── controller/        # Floating controller, Shadow DOM, position tracker
+│   │   ├── controller/        # Control bar, Shadow DOM, position tracker, downloader/recorder
 │   │   ├── shortcuts/         # Keyboard shortcut dispatcher
 │   │   ├── plugins/           # Future feature plugin contracts
 │   │   └── index.ts           # Content coordinator

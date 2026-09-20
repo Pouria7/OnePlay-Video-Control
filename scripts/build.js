@@ -8,7 +8,7 @@ const rootDir = path.resolve(__dirname, '..');
 const distDir = path.resolve(rootDir, 'dist');
 
 async function runBuild() {
-  console.log('🚀 Starting Universal Floating Video Controls extension build...');
+  console.log('🚀 Starting Universal Video Controls extension build...');
 
   // Ensure icons are generated
   await import('./generate-icons.js');
