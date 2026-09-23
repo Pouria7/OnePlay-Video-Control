@@ -176,7 +176,10 @@ export class VideoController {
   // ─── Video events ─────────────────────────────────────────────────────
 
   private bindVideoEvents(): void {
-    const onPlayPause = () => this.updatePlayState();
+    const onPlayPause = () => {
+      this.updatePlayState();
+      this.resetAutoHideTimer();
+    }
     const onTimeUpdate = () => {
       if (!this.isDraggingScrub) this.updateTimeDisplay();
     };
