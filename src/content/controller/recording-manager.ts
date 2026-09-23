@@ -78,7 +78,8 @@ export class RecordingManager {
             return;
           }
         }
-      } catch {
+      } catch (error) {
+        console.log('[Video] blob fetch failed:', error);
         // fetch failed → MSE stream. Fall through to recording.
       }
 
@@ -161,8 +162,8 @@ export class RecordingManager {
     if (this.video.paused) {
       try {
         const p = this.video.play();
-        if (p && typeof p.catch === 'function') p.catch(() => {});
-      } catch {}
+        if (p && typeof p.catch === 'function') p.catch(() => { });
+      } catch { }
     }
 
     this.mediaRecorder.start(250);

@@ -578,6 +578,8 @@ export function createShadowUI(): ShadowUIElements {
 
   shadowRoot.appendChild(style);
 
+
+  //todo : update shortkey title base on config
   const container = document.createElement('div');
   container.className = 'ufvc-bar';
 
@@ -607,11 +609,11 @@ export function createShadowUI(): ShadowUIElements {
         <span class="ufvc-icon-pause" style="display:none;">${ICONS.pause}</span>
       </button>
 
-      <button class="ufvc-btn ufvc-seek-back-btn" title="Seek -5s (← or J)" aria-label="Seek Backward 5 Seconds">
+      <button class="ufvc-btn ufvc-seek-back-btn" title="Seek -5s (←)" aria-label="Seek Backward 5 Seconds">
         ${ICONS.seekBack}
       </button>
 
-      <button class="ufvc-btn ufvc-seek-forward-btn" title="Seek +5s (→ or L)" aria-label="Seek Forward 5 Seconds">
+      <button class="ufvc-btn ufvc-seek-forward-btn" title="Seek +5s (→)" aria-label="Seek Forward 5 Seconds">
         ${ICONS.seekForward}
       </button>
 

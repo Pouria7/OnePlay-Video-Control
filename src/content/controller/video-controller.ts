@@ -14,6 +14,26 @@ import { themeEngine } from '../../themes/theme-engine';
 import { formatTime } from '../../utils/dom';
 import { RecordingManager } from './recording-manager';
 
+/** CSS state classes toggled on shadow-UI elements. */
+const CLASS = {
+  IDLE: 'idle',
+  OPEN: 'open',
+  DRAGGING: 'dragging',
+  ACTIVE: 'active',
+  MINIMAL_MODE: 'minimal-mode',
+  SPEED_ITEM: 'ufvc-speed-item',
+} as const;
+
+/** Selectors derived from the class names above. */
+const SELECTOR = {
+  SPEED_ITEM: `.${CLASS.SPEED_ITEM}`,
+} as const;
+
+/** Data attributes read from shadow-UI elements. */
+const ATTR = {
+  SPEED: 'data-speed',
+} as const;
+
 export class VideoController {
   readonly id: string;
   readonly video: HTMLVideoElement;
@@ -67,7 +87,7 @@ export class VideoController {
   updateConfig(newConfig: ResolvedConfig): void {
     this.config = newConfig;
     this.applyTheme(newConfig.theme);
-    this.ui.container.classList.toggle('minimal-mode', newConfig.controlsLayout === 'minimal');
+    this.setMinimalMode(newConfig.controlsLayout === 'minimal');
     this.positionManager.updateConfig(newConfig);
   }
 
@@ -76,11 +96,81 @@ export class VideoController {
   }
 
   private syncInitialState(): void {
-    this.ui.container.classList.toggle('minimal-mode', this.config.controlsLayout === 'minimal');
+    this.setMinimalMode(this.config.controlsLayout === 'minimal');
     this.updatePlayState();
     this.updateTimeDisplay();
     this.updateVolumeUI();
     this.updateSpeedUI();
+  }
+
+  // ─── UI state helpers (CSS class toggles) ─────────────────────────────
+
+  /** Show the controls bar (removes the idle state). */
+  private showControls(): void {
+    this.ui.container.classList.remove(CLASS.IDLE);
+  }
+
+  /** Hide the controls bar (adds the idle state). */
+  private hideControls(): void {
+    this.ui.container.classList.add(CLASS.IDLE);
+  }
+
+  private setMinimalMode(enabled: boolean): void {
+    this.ui.container.classList.toggle(CLASS.MINIMAL_MODE, enabled);
+  }
+
+  private setScrubbing(isScrubbing: boolean): void {
+    this.isDraggingScrub = isScrubbing;
+    this.ui.progressContainer.classList.toggle(CLASS.DRAGGING, isScrubbing);
+  }
+
+  // Speed menu
+  private isSpeedMenuOpen(): boolean {
+    return this.ui.speedMenu.classList.contains(CLASS.OPEN);
+  }
+
+  private openSpeedMenu(): void {
+    this.ui.speedMenu.classList.add(CLASS.OPEN);
+  }
+
+  private closeSpeedMenu(): void {
+    this.ui.speedMenu.classList.remove(CLASS.OPEN);
+  }
+
+  private toggleSpeedMenu(): void {
+    this.ui.speedMenu.classList.toggle(CLASS.OPEN);
+  }
+
+  // Context menu
+  private isContextMenuOpen(): boolean {
+    return this.ui.contextMenu.classList.contains(CLASS.OPEN);
+  }
+
+  private openContextMenu(): void {
+    this.ui.contextMenu.classList.add(CLASS.OPEN);
+  }
+
+  private closeContextMenu(): void {
+    this.ui.contextMenu.classList.remove(CLASS.OPEN);
+  }
+
+  // Both menus
+  private isAnyMenuOpen(): boolean {
+    return this.isSpeedMenuOpen() || this.isContextMenuOpen();
+  }
+
+  private closeAllMenus(): void {
+    this.closeSpeedMenu();
+    this.closeContextMenu();
+  }
+
+  // Speed items
+  private getSpeedItems(): NodeListOf<HTMLButtonElement> {
+    return this.ui.speedMenu.querySelectorAll<HTMLButtonElement>(SELECTOR.SPEED_ITEM);
+  }
+
+  private setSpeedItemActive(item: HTMLButtonElement, isActive: boolean): void {
+    item.classList.toggle(CLASS.ACTIVE, isActive);
   }
 
   // ─── Video events ─────────────────────────────────────────────────────
@@ -90,7 +180,12 @@ export class VideoController {
     const onTimeUpdate = () => {
       if (!this.isDraggingScrub) this.updateTimeDisplay();
     };
-    const onVolumeChange = () => this.updateVolumeUI();
+    // Fires for any volume/mute change (slider, mute button, toggleMute(),
+    // or the page itself), so the controls reappear and the idle timer restarts.
+    const onVolumeChange = () => {
+      this.updateVolumeUI();
+      this.resetAutoHideTimer();
+    };
     const onProgress = () => this.updateBufferProgress();
     const onRateChange = () => this.updateSpeedUI();
 
@@ -158,8 +253,7 @@ export class VideoController {
     // 2. Volume
     const handleVolumeBtnClick = (e: MouseEvent) => {
       e.stopPropagation();
-      this.video.muted = !this.video.muted;
-      if (!this.video.muted && this.video.volume === 0) this.video.volume = 0.5;
+      this.toggleMute();
     };
     this.ui.volumeBtn.addEventListener('click', handleVolumeBtnClick);
     this.cleanupFns.push(() =>
@@ -201,8 +295,7 @@ export class VideoController {
     const handleProgressMouseDown = (e: MouseEvent) => {
       e.stopPropagation();
       e.preventDefault();
-      this.isDraggingScrub = true;
-      this.ui.progressContainer.classList.add('dragging');
+      this.setScrubbing(true);
       this.resetAutoHideTimer();
 
       const ratio = getProgressRatioFromEvent(e);
@@ -214,8 +307,7 @@ export class VideoController {
         handleProgressMouseMove(moveEvent);
 
       const onWindowMouseUp = (upEvent: MouseEvent) => {
-        this.isDraggingScrub = false;
-        this.ui.progressContainer.classList.remove('dragging');
+        this.setScrubbing(false);
         const endRatio = getProgressRatioFromEvent(upEvent);
         const finalDuration = isFinite(this.video.duration) ? this.video.duration : 0;
         this.video.currentTime = endRatio * finalDuration;
@@ -240,20 +332,20 @@ export class VideoController {
     // 4. Speed
     const handleSpeedBtnClick = (e: MouseEvent) => {
       e.stopPropagation();
-      this.ui.speedMenu.classList.toggle('open');
+      this.toggleSpeedMenu();
     };
     this.ui.speedBtn.addEventListener('click', handleSpeedBtnClick);
     this.cleanupFns.push(() =>
       this.ui.speedBtn.removeEventListener('click', handleSpeedBtnClick)
     );
 
-    const speedItems = this.ui.speedMenu.querySelectorAll<HTMLButtonElement>('.ufvc-speed-item');
+    const speedItems = this.getSpeedItems();
     speedItems.forEach((item) => {
       const handleSpeedItemClick = (e: MouseEvent) => {
         e.stopPropagation();
-        const speed = parseFloat(item.getAttribute('data-speed') || '1');
+        const speed = parseFloat(item.getAttribute(ATTR.SPEED) || '1');
         this.video.playbackRate = speed;
-        this.ui.speedMenu.classList.remove('open');
+        this.closeSpeedMenu();
       };
       item.addEventListener('click', handleSpeedItemClick);
       this.cleanupFns.push(() => item.removeEventListener('click', handleSpeedItemClick));
@@ -261,14 +353,13 @@ export class VideoController {
 
     // Global close handlers
     const handleDocumentClick = () => {
-      this.ui.speedMenu.classList.remove('open');
-      this.ui.contextMenu.classList.remove('open');
+      this.closeAllMenus();
     };
     document.addEventListener('click', handleDocumentClick);
     this.cleanupFns.push(() => document.removeEventListener('click', handleDocumentClick));
 
     const handleContainerClick = () => {
-      this.ui.contextMenu.classList.remove('open');
+      this.closeContextMenu();
     };
     this.ui.container.addEventListener('click', handleContainerClick);
     this.cleanupFns.push(() => this.ui.container.removeEventListener('click', handleContainerClick));
@@ -286,7 +377,7 @@ export class VideoController {
     const handleDownloadClick = (e: MouseEvent) => {
       e.stopPropagation();
       e.preventDefault();
-      this.ui.contextMenu.classList.remove('open');
+      this.closeContextMenu();
       void this.recording.download();
     };
     this.ui.contextDownloadBtn.addEventListener('click', handleDownloadClick);
@@ -296,7 +387,7 @@ export class VideoController {
 
     const handleWindowContextMenu = (e: MouseEvent) => {
       if (!this.ui.host.contains(e.target as Node)) {
-        this.ui.contextMenu.classList.remove('open');
+        this.closeContextMenu();
       }
     };
     window.addEventListener('contextmenu', handleWindowContextMenu);
@@ -307,8 +398,7 @@ export class VideoController {
     // Escape key
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        this.ui.speedMenu.classList.remove('open');
-        this.ui.contextMenu.classList.remove('open');
+        this.closeAllMenus();
       }
     };
     window.addEventListener('keydown', handleKeyDown);
@@ -361,7 +451,7 @@ export class VideoController {
     if (this.video.paused || this.video.ended) {
       this.ui.playIcon.style.display = 'inline-block';
       this.ui.pauseIcon.style.display = 'none';
-      this.ui.container.classList.remove('idle');
+      this.showControls();
     } else {
       this.ui.playIcon.style.display = 'none';
       this.ui.pauseIcon.style.display = 'inline-block';
@@ -415,36 +505,35 @@ export class VideoController {
     const rate = this.video.playbackRate || 1;
     this.ui.speedBtn.textContent = `${rate}x`;
 
-    const items = this.ui.speedMenu.querySelectorAll<HTMLButtonElement>('.ufvc-speed-item');
+    const items = this.getSpeedItems();
     items.forEach((item) => {
-      const speed = parseFloat(item.getAttribute('data-speed') || '1');
-      item.classList.toggle('active', speed === rate);
+      const speed = parseFloat(item.getAttribute(ATTR.SPEED) || '1');
+      this.setSpeedItemActive(item, speed === rate);
     });
   }
 
   private resetAutoHideTimer(): void {
     if (this.autoHideTimeout) clearTimeout(this.autoHideTimeout);
-    this.ui.container.classList.remove('idle');
+    this.showControls();
 
     if (
       this.video.paused ||
       this.video.ended ||
       this.isDraggingScrub ||
-      this.ui.speedMenu.classList.contains('open') ||
-      this.ui.contextMenu.classList.contains('open')
+      this.isAnyMenuOpen()
     ) {
       return;
     }
 
     this.autoHideTimeout = setTimeout(() => {
       if (!this.video.paused && !this.isDraggingScrub && !this.isDestroyed) {
-        this.ui.container.classList.add('idle');
+        this.hideControls();
       }
     }, this.config.autoHideDelay);
   }
 
   private showContextMenu(e: MouseEvent): void {
-    this.ui.speedMenu.classList.remove('open');
+    this.closeSpeedMenu();
     this.resetAutoHideTimer();
 
     const barRect = this.ui.container.getBoundingClientRect();
@@ -464,7 +553,7 @@ export class VideoController {
       this.ui.contextMenu.style.top = 'auto';
     }
 
-    this.ui.contextMenu.classList.add('open');
+    this.openContextMenu();
   }
 
   // ─── Recording UI bridge ──────────────────────────────────────────────
