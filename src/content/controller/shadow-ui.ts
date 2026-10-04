@@ -379,7 +379,7 @@ export function createShadowUI(): ShadowUIElements {
     direction: rtl;
     width: 4px;
     height: 74px;
-    background: var(--ufvc-bg, rgba(255, 255, 255, 0.15));
+    background: var(--ufvc-text, rgba(255, 255, 255, 0.15));
     border-radius: var(--ufvc-radius, 9999px);
     outline: none;
     cursor: pointer;
