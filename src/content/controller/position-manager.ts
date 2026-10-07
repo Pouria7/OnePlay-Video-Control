@@ -99,6 +99,9 @@ export class PositionManager {
     this.hostElement.style.height = `${pos.height}px`;
     this.hostElement.style.opacity = '1';
     this.hostElement.style.pointerEvents = 'auto';
+
+    // Show volume slider & speed menu downward when near top of viewport (< 250px)
+    this.containerElement.classList.toggle('popups-down', pos.top < 250);
   });
 
   private attachListeners(): void {

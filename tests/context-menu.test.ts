@@ -147,4 +147,58 @@ describe('VideoController Context Menu & Download', () => {
 
     controller.destroy();
   });
+
+  it('toggles popups-down class when controller is near top of viewport (< 250px)', async () => {
+    // Mock getBoundingClientRect on video
+    vi.spyOn(video, 'getBoundingClientRect').mockReturnValue({
+      top: 50,
+      bottom: 250,
+      left: 100,
+      right: 500,
+      width: 400,
+      height: 200,
+      x: 100,
+      y: 50,
+      toJSON: () => {}
+    });
+
+    const controller = new VideoController('test-popups-top', video, config);
+    await new Promise((resolve) => setTimeout(resolve, 50));
+
+    const host = document.querySelector('.ufvc-controller-root') as HTMLElement;
+    const shadow = host.shadowRoot!;
+    const bar = shadow.querySelector('.ufvc-bar') as HTMLElement;
+
+    // pos.top will be bottom - 44 - 10 = 196 (< 300)
+    expect(bar.classList.contains('popups-down')).toBe(true);
+
+    controller.destroy();
+  });
+
+  it('does not toggle popups-down when controller is far from top (>= 300px)', async () => {
+    vi.spyOn(video, 'getBoundingClientRect').mockReturnValue({
+      top: 500,
+      bottom: 800,
+      left: 100,
+      right: 500,
+      width: 400,
+      height: 300,
+      x: 100,
+      y: 500,
+      toJSON: () => {}
+    });
+
+    const controller = new VideoController('test-popups-bottom', video, config);
+    await new Promise((resolve) => setTimeout(resolve, 50));
+
+    const host = document.querySelector('.ufvc-controller-root') as HTMLElement;
+    const shadow = host.shadowRoot!;
+    const bar = shadow.querySelector('.ufvc-bar') as HTMLElement;
+
+    // pos.top will be 800 - 44 - 10 = 746 (>= 250)
+    expect(bar.classList.contains('popups-down')).toBe(false);
+
+    controller.destroy();
+  });
 });
+

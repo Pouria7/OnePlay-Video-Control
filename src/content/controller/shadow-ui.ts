@@ -372,6 +372,30 @@ export function createShadowUI(): ShadowUIElements {
       display: flex;
     }
 
+    .ufvc-volume-slider-box::before {
+      content: '';
+      position: absolute;
+      bottom: -10px;
+      left: 0;
+      right: 0;
+      height: 10px;
+    }
+
+    .ufvc-bar.popups-down .ufvc-volume-slider-box {
+      bottom: auto;
+      top: 34px;
+    }
+
+    .ufvc-bar.popups-down .ufvc-volume-slider-box::before {
+      top: -10px;
+      bottom: auto;
+    }
+
+    .ufvc-bar.popups-down .ufvc-speed-menu {
+      bottom: auto;
+      top: 34px;
+    }
+
   .ufvc-volume-slider {
     -webkit-appearance: none;
     appearance: none;

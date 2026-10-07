@@ -9,6 +9,14 @@ import { BuiltinThemeName, ShortcutAction, ShortcutsConfig } from '../types';
 import { normalizeDomain } from '../utils/url';
 import { adapterManager } from '../content/adapters/adapter-manager';
 import { eventToShortcutString, formatShortcutForDisplay } from '../utils/shortcuts';
+import {
+  checkForUpdates,
+  detectBrowser,
+  getBrowserDisplayName,
+  getStoreUrlForBrowser,
+  CLOUDFLARE_PAGES_UPDATE_URL,
+  UpdateCheckResult
+} from '../utils/update-checker';
 
 document.addEventListener('DOMContentLoaded', async () => {
   // Navigation Tabs
@@ -29,6 +37,10 @@ document.addEventListener('DOMContentLoaded', async () => {
           sec.classList.remove('active');
         }
       });
+
+      if (targetTab) {
+        history.replaceState(null, '', `#${targetTab}`);
+      }
     });
   });
 
@@ -627,5 +639,144 @@ document.addEventListener('DOMContentLoaded', async () => {
       await storageManager.setGlobalSettings({ shortcuts });
       stopRecording();
     });
+  }
+
+  // ─── Section 5: Updates & About ──────────────────────────────────────────
+  const aboutInstalledVersion = document.getElementById('aboutInstalledVersion');
+  const aboutDetectedBrowser = document.getElementById('aboutDetectedBrowser');
+  const btnCheckUpdates = document.getElementById('btnCheckUpdates') as HTMLButtonElement | null;
+  const btnCheckUpdatesText = document.getElementById('btnCheckUpdatesText');
+  const updateStatusNotice = document.getElementById('updateStatusNotice');
+  const updateNoticeText = document.getElementById('updateNoticeText');
+  const updateAvailableCard = document.getElementById('updateAvailableCard');
+  const aboutReleaseTitle = document.getElementById('aboutReleaseTitle');
+  const aboutReleaseMeta = document.getElementById('aboutReleaseMeta');
+  const aboutReleaseMessage = document.getElementById('aboutReleaseMessage');
+  const aboutPrimaryStoreBtn = document.getElementById('aboutPrimaryStoreBtn') as HTMLAnchorElement | null;
+  const optUpdateBadge = document.getElementById('optUpdateBadge');
+
+  const currentManifestVersion = (typeof chrome !== 'undefined' && chrome.runtime?.getManifest)
+    ? chrome.runtime.getManifest().version
+    : '1.0.0';
+
+  if (aboutInstalledVersion) {
+    aboutInstalledVersion.textContent = `v${currentManifestVersion}`;
+  }
+
+  const currentBrowser = detectBrowser();
+  const currentBrowserName = getBrowserDisplayName(currentBrowser);
+  if (aboutDetectedBrowser) {
+    aboutDetectedBrowser.textContent = currentBrowserName;
+  }
+
+  if (optUpdateBadge) {
+    optUpdateBadge.addEventListener('click', () => {
+      const updatesNav = document.querySelector<HTMLAnchorElement>('.nav-item[data-tab="updates"]');
+      if (updatesNav) updatesNav.click();
+    });
+  }
+
+  const renderUpdateUI = (res: UpdateCheckResult) => {
+    if (!updateStatusNotice || !updateNoticeText) return;
+
+    if (res.hasUpdate && res.versionInfo) {
+      // Update available state
+      updateStatusNotice.className = 'update-notice update-found';
+      updateNoticeText.textContent = `A new version (v${res.latestVersion}) is available for ${res.detectedBrowserName}!`;
+
+      if (optUpdateBadge) {
+        optUpdateBadge.style.display = 'inline-block';
+      }
+
+      if (updateAvailableCard) {
+        updateAvailableCard.style.display = 'block';
+        if (aboutReleaseTitle) {
+          aboutReleaseTitle.textContent = res.versionInfo.title || 'Universal Video Controls Update';
+        }
+        if (aboutReleaseMeta) {
+          aboutReleaseMeta.textContent = `Version v${res.latestVersion}`;
+        }
+        if (aboutReleaseMessage) {
+          aboutReleaseMessage.textContent = res.versionInfo.message || '';
+        }
+        if (aboutPrimaryStoreBtn) {
+          aboutPrimaryStoreBtn.href = res.updateUrl;
+          const btnSpan = aboutPrimaryStoreBtn.querySelector('span');
+          if (btnSpan) {
+            btnSpan.textContent = `Update for ${res.detectedBrowserName}`;
+          }
+        }
+      }
+    } else if (res.error) {
+      // Error state
+      updateStatusNotice.className = 'update-notice error';
+      updateNoticeText.textContent = `Could not reach update server (${res.error}). Please try again later.`;
+      if (updateAvailableCard) updateAvailableCard.style.display = 'none';
+      if (optUpdateBadge) optUpdateBadge.style.display = 'none';
+    } else {
+      // Up to date state
+      updateStatusNotice.className = 'update-notice up-to-date';
+      updateNoticeText.textContent = `You are running the latest version of Universal Video Controls (v${currentManifestVersion}).`;
+      if (updateAvailableCard) updateAvailableCard.style.display = 'none';
+      if (optUpdateBadge) optUpdateBadge.style.display = 'none';
+    }
+
+    // Set individual browser store links if versionInfo exists
+    if (res.versionInfo?.browsers) {
+      const b = res.versionInfo.browsers;
+      const setLink = (id: string, url?: string) => {
+        const el = document.getElementById(id) as HTMLAnchorElement | null;
+        if (el && url) el.href = url;
+      };
+      setLink('storeLinkChrome', b.chrome?.url);
+      setLink('storeLinkEdge', b.edge?.url);
+      setLink('storeLinkOpera', b.opera?.url);
+      setLink('storeLinkFirefox', b.firefox?.url);
+      setLink('storeLinkDefault', b.default?.url || b.chrome?.url);
+    }
+  };
+
+  const handleCheckUpdatesClick = async (force: boolean) => {
+    if (btnCheckUpdates) {
+      btnCheckUpdates.classList.add('loading');
+      btnCheckUpdates.disabled = true;
+    }
+    if (btnCheckUpdatesText) {
+      btnCheckUpdatesText.textContent = 'Checking for updates...';
+    }
+
+    try {
+      const res = await checkForUpdates({ force });
+      renderUpdateUI(res);
+    } catch (err: any) {
+      if (updateStatusNotice && updateNoticeText) {
+        updateStatusNotice.className = 'update-notice error';
+        updateNoticeText.textContent = `Error checking for updates: ${err?.message || err}`;
+      }
+    } finally {
+      if (btnCheckUpdates) {
+        btnCheckUpdates.classList.remove('loading');
+        btnCheckUpdates.disabled = false;
+      }
+      if (btnCheckUpdatesText) {
+        btnCheckUpdatesText.textContent = 'Check for Updates';
+      }
+    }
+  };
+
+  if (btnCheckUpdates) {
+    btnCheckUpdates.addEventListener('click', () => handleCheckUpdatesClick(true));
+  }
+
+  // Initial silent update check on options page load
+  handleCheckUpdatesClick(false);
+
+  // Support direct hash navigation on load (e.g. options.html#updates)
+  const initialHash = window.location.hash.replace(/^#/, '');
+  if (initialHash) {
+    const matchingNav = document.querySelector<HTMLAnchorElement>(`.nav-item[data-tab="${initialHash}"]`);
+    if (matchingNav) {
+      matchingNav.click();
+    }
   }
 });

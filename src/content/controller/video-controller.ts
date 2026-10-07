@@ -22,6 +22,7 @@ const CLASS = {
   ACTIVE: 'active',
   MINIMAL_MODE: 'minimal-mode',
   SPEED_ITEM: 'ufvc-speed-item',
+  POPUPS_DOWN: 'popups-down',
 } as const;
 
 /** Selectors derived from the class names above. */
@@ -138,6 +139,10 @@ export class VideoController {
   }
 
   private toggleSpeedMenu(): void {
+    if (!this.isSpeedMenuOpen()) {
+      const barRect = this.ui.container.getBoundingClientRect();
+      this.ui.container.classList.toggle(CLASS.POPUPS_DOWN, barRect.top < 250);
+    }
     this.ui.speedMenu.classList.toggle(CLASS.OPEN);
   }
 
@@ -254,8 +259,21 @@ export class VideoController {
     );
 
     // 2. Volume
+    const handleVolumeMouseEnter = () => {
+      const barRect = this.ui.container.getBoundingClientRect();
+      this.ui.container.classList.toggle(CLASS.POPUPS_DOWN, barRect.top < 250);
+    };
+    this.ui.volumeBtn.addEventListener('mouseenter', handleVolumeMouseEnter);
+    this.ui.volumeSliderContainer.addEventListener('mouseenter', handleVolumeMouseEnter);
+    this.cleanupFns.push(() => {
+      this.ui.volumeBtn.removeEventListener('mouseenter', handleVolumeMouseEnter);
+      this.ui.volumeSliderContainer.removeEventListener('mouseenter', handleVolumeMouseEnter);
+    });
+
     const handleVolumeBtnClick = (e: MouseEvent) => {
       e.stopPropagation();
+      const barRect = this.ui.container.getBoundingClientRect();
+      this.ui.container.classList.toggle(CLASS.POPUPS_DOWN, barRect.top < 250);
       this.toggleMute();
     };
     this.ui.volumeBtn.addEventListener('click', handleVolumeBtnClick);

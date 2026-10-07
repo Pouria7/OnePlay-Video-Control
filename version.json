@@ -1,0 +1,26 @@
+{
+  "title": "Universal Video Controls Update",
+  "message": "A new version of Universal Video Controls is available.",
+  "browsers": {
+    "chrome": {
+      "version": "1.0.0",
+      "url": "https://chromewebstore.google.com/detail/universal-video-controls"
+    },
+    "edge": {
+      "version": "1.0.0",
+      "url": "https://microsoftedge.microsoft.com/addons/detail/universal-video-controls"
+    },
+    "opera": {
+      "version": "1.0.0",
+      "url": "https://addons.opera.com/en/extensions/details/universal-video-controls"
+    },
+    "firefox": {
+      "version": "1.0.0",
+      "url": "https://addons.mozilla.org/en-US/firefox/addon/universal-video-controls"
+    },
+    "default": {
+      "version": "1.0.0",
+      "url": "https://chromewebstore.google.com/detail/universal-video-controls"
+    }
+  }
+}

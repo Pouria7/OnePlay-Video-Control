@@ -20,6 +20,22 @@
         <div class="site-status" id="activeSiteBadge">Ready</div>
       </header>
 
+      <!-- Update Banner (Shown when new update is available) -->
+      <div id="updateBanner" class="update-banner" style="display: none;">
+        <div class="update-banner-header">
+          <div class="update-banner-badge">
+            <span class="update-dot"></span>
+            <span>Update Available</span>
+          </div>
+          <span class="update-version" id="popupNewVersion">v1.1.0</span>
+          <button id="popupDismissUpdateBtn" class="update-close-btn" title="Dismiss">✕</button>
+        </div>
+        <p class="update-message" id="popupUpdateMessage"></p>
+        <div class="update-banner-footer">
+          <a id="popupUpdateLink" href="#" target="_blank" class="update-action-btn">Update Now</a>
+        </div>
+      </div>
+
       <!-- Global Controls Section -->
       <section class="card">
         <div class="section-title">Global Settings</div>

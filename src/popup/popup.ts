@@ -6,6 +6,7 @@ import { storageManager } from '../storage/storage-manager';
 import { DEFAULT_SHORTCUTS } from '../storage/types';
 import { getDomainFromUrl } from '../utils/url';
 import { formatShortcutForDisplay } from '../utils/shortcuts';
+import { checkForUpdates, isVersionDismissed, dismissVersion } from '../utils/update-checker';
 
 document.addEventListener('DOMContentLoaded', async () => {
   const versionBadge = document.getElementById('versionBadge') as HTMLElement;
@@ -30,6 +31,40 @@ document.addEventListener('DOMContentLoaded', async () => {
     const manifest = chrome.runtime.getManifest();
     versionBadge.textContent = `v${manifest.version}`;
   }
+
+  // Check for updates in background
+  const runPopupUpdateCheck = async () => {
+    try {
+      const res = await checkForUpdates({ force: false });
+      if (res.hasUpdate && res.versionInfo) {
+        const isDismissed = await isVersionDismissed(res.latestVersion);
+        if (!isDismissed) {
+          const banner = document.getElementById('updateBanner');
+          const versionTag = document.getElementById('popupNewVersion');
+          const messageElem = document.getElementById('popupUpdateMessage');
+          const linkElem = document.getElementById('popupUpdateLink') as HTMLAnchorElement;
+          const dismissBtn = document.getElementById('popupDismissUpdateBtn');
+
+          if (banner && versionTag && messageElem && linkElem) {
+            versionTag.textContent = `v${res.latestVersion}`;
+            messageElem.textContent =
+              res.versionInfo.message || `A new version (v${res.latestVersion}) is available.`;
+            linkElem.href = res.updateUrl;
+            banner.style.display = 'flex';
+
+            dismissBtn?.addEventListener('click', async (e) => {
+              e.stopPropagation();
+              banner.style.display = 'none';
+              await dismissVersion(res.latestVersion);
+            });
+          }
+        }
+      }
+    } catch (err) {
+      console.warn('[UFVC Popup] Update check error:', err);
+    }
+  };
+  runPopupUpdateCheck();
 
   // Open Options Page button
   if (openOptionsBtn) {
