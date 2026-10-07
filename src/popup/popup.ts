@@ -6,7 +6,12 @@ import { storageManager } from '../storage/storage-manager';
 import { DEFAULT_SHORTCUTS } from '../storage/types';
 import { getDomainFromUrl } from '../utils/url';
 import { formatShortcutForDisplay } from '../utils/shortcuts';
-import { checkForUpdates, isVersionDismissed, dismissVersion } from '../utils/update-checker';
+import {
+  checkForUpdates,
+  isVersionDismissed,
+  dismissVersion,
+  getCurrentVersion
+} from '../utils/update-checker';
 
 document.addEventListener('DOMContentLoaded', async () => {
   const versionBadge = document.getElementById('versionBadge') as HTMLElement;
@@ -26,16 +31,18 @@ document.addEventListener('DOMContentLoaded', async () => {
   const siteLayoutSelect = document.getElementById('siteLayoutSelect') as HTMLSelectElement;
   const openOptionsBtn = document.getElementById('openOptionsBtn') as HTMLButtonElement;
 
-  // Set manifest version
-  if (typeof chrome !== 'undefined' && chrome.runtime?.getManifest) {
-    const manifest = chrome.runtime.getManifest();
-    versionBadge.textContent = `v${manifest.version}`;
+  // Set installed version
+  if (versionBadge) {
+    versionBadge.textContent = `v${getCurrentVersion()}`;
   }
 
   // Check for updates in background
   const runPopupUpdateCheck = async () => {
     try {
       const res = await checkForUpdates({ force: false });
+      if (versionBadge) {
+        versionBadge.textContent = `v${res.currentVersion || getCurrentVersion()}`;
+      }
       if (res.hasUpdate && res.versionInfo) {
         const isDismissed = await isVersionDismissed(res.latestVersion);
         if (!isDismissed) {

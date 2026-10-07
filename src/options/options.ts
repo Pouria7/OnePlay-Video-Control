@@ -15,7 +15,8 @@ import {
   getBrowserDisplayName,
   getStoreUrlForBrowser,
   CLOUDFLARE_PAGES_UPDATE_URL,
-  UpdateCheckResult
+  UpdateCheckResult,
+  getCurrentVersion
 } from '../utils/update-checker';
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -44,12 +45,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   });
 
-  // Load Manifest Version
-  if (typeof chrome !== 'undefined' && chrome.runtime?.getManifest) {
-    const versionLabel = document.getElementById('optVersion');
-    if (versionLabel) {
-      versionLabel.textContent = `Version ${chrome.runtime.getManifest().version}`;
-    }
+  // Load Installed Version in sidebar
+  const currentVersion = getCurrentVersion();
+  const versionLabel = document.getElementById('optVersion');
+  if (versionLabel) {
+    versionLabel.textContent = `Version ${currentVersion}`;
   }
 
   // Load Storage Data
@@ -655,12 +655,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   const aboutPrimaryStoreBtn = document.getElementById('aboutPrimaryStoreBtn') as HTMLAnchorElement | null;
   const optUpdateBadge = document.getElementById('optUpdateBadge');
 
-  const currentManifestVersion = (typeof chrome !== 'undefined' && chrome.runtime?.getManifest)
-    ? chrome.runtime.getManifest().version
-    : '1.0.0';
-
   if (aboutInstalledVersion) {
-    aboutInstalledVersion.textContent = `v${currentManifestVersion}`;
+    aboutInstalledVersion.textContent = `v${currentVersion}`;
   }
 
   const currentBrowser = detectBrowser();
@@ -678,6 +674,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   const renderUpdateUI = (res: UpdateCheckResult) => {
     if (!updateStatusNotice || !updateNoticeText) return;
+
+    const installedVer = res.currentVersion || getCurrentVersion();
+    if (aboutInstalledVersion) {
+      aboutInstalledVersion.textContent = `v${installedVer}`;
+    }
 
     if (res.hasUpdate && res.versionInfo) {
       // Update available state
@@ -716,7 +717,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     } else {
       // Up to date state
       updateStatusNotice.className = 'update-notice up-to-date';
-      updateNoticeText.textContent = `You are running the latest version of Universal Video Controls (v${currentManifestVersion}).`;
+      updateNoticeText.textContent = `You are running the latest version of Universal Video Controls (v${installedVer}).`;
       if (updateAvailableCard) updateAvailableCard.style.display = 'none';
       if (optUpdateBadge) optUpdateBadge.style.display = 'none';
     }

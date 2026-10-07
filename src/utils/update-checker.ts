@@ -2,7 +2,7 @@
  * Update Checker Module
  *
  * Checks for extension updates by querying a hosted version.json file
- * (hosted on Cloudflare Pages with raw GitHub fallback).
+ * (hosted on Cloudflare Pages).
  *
  * Since extension stores (Chrome Web Store, Edge Add-ons, Opera, Firefox)
  * approve updates at different times, each browser has its own approved version and URL.
@@ -45,7 +45,6 @@ export interface UpdateCheckResult {
 }
 
 export const CLOUDFLARE_PAGES_UPDATE_URL = 'https://universal-video-controls.pages.dev/version.json';
-export const GITHUB_RAW_UPDATE_URL = 'https://raw.githubusercontent.com/Pouria7/universal-floating-video-controls/main/version.json';
 
 const CACHE_KEY = 'ufvc_update_cache';
 const DISMISSED_KEY = 'ufvc_dismissed_update_version';
@@ -170,10 +169,9 @@ async function fetchWithTimeout(url: string, timeoutMs = 5000): Promise<Response
 }
 
 /**
- * Fetches version info from Cloudflare Pages, falling back to GitHub raw.
+ * Fetches version info from Cloudflare Pages.
  */
 export async function fetchVersionInfo(primaryUrl = CLOUDFLARE_PAGES_UPDATE_URL): Promise<VersionInfo> {
-  // 1. Try primary (Cloudflare Pages)
   try {
     const res = await fetchWithTimeout(primaryUrl);
     if (res.ok) {
@@ -183,25 +181,10 @@ export async function fetchVersionInfo(primaryUrl = CLOUDFLARE_PAGES_UPDATE_URL)
       }
     }
   } catch (err) {
-    console.warn('[UpdateChecker] Primary fetch failed, trying fallback:', err);
+    console.warn('[UpdateChecker] Version metadata fetch failed:', err);
   }
 
-  // 2. Try fallback (GitHub Raw) if primary was different
-  if (primaryUrl !== GITHUB_RAW_UPDATE_URL) {
-    try {
-      const res = await fetchWithTimeout(GITHUB_RAW_UPDATE_URL);
-      if (res.ok) {
-        const data = await res.json();
-        if (data && (data.browsers || typeof data.latestVersion === 'string')) {
-          return data as VersionInfo;
-        }
-      }
-    } catch (err) {
-      console.warn('[UpdateChecker] Fallback fetch failed:', err);
-    }
-  }
-
-  throw new Error('Could not fetch update version metadata from any endpoint.');
+  throw new Error('Could not fetch update version metadata.');
 }
 
 /**
