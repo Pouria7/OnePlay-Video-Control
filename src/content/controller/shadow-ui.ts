@@ -57,7 +57,7 @@ export function createShadowUI(): ShadowUIElements {
   host.style.cssText = `
     position: fixed;
     z-index: 2147483647;
-    pointer-events: auto;
+    pointer-events: none;
     transition: opacity 0.25s ease, transform 0.25s ease;
     user-select: none;
     -webkit-user-select: none;
@@ -75,6 +75,7 @@ export function createShadowUI(): ShadowUIElements {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif !important;
       font-size: 13px !important;
       line-height: 1 !important;
+      pointer-events: none !important;
     }
 
     *, *::before, *::after {
@@ -100,7 +101,14 @@ export function createShadowUI(): ShadowUIElements {
       opacity: var(--ufvc-opacity, 0.95);
       transform: scale(var(--ufvc-scale, 1.0));
       transform-origin: bottom center;
-      transition: opacity 0.25s ease, transform 0.2s ease, background 0.2s ease;
+      pointer-events: auto;
+      transition: opacity 0.25s ease, transform 0.2s ease, background 0.2s ease, display 0.25s ease allow-discrete;
+    }
+
+    @starting-style {
+      .ufvc-bar {
+        opacity: 0;
+      }
     }
 
     /* Single-row layout (default) */
@@ -596,6 +604,7 @@ export function createShadowUI(): ShadowUIElements {
     /* Auto-hide fade */
     .ufvc-bar.idle {
       opacity: 0 !important;
+      display: none !important;
       pointer-events: none !important;
     }
   `;

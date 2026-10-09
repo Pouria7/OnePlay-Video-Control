@@ -164,3 +164,61 @@ describe('Shortcuts Utility', () => {
     });
   });
 });
+
+import { ShortcutManager } from '../src/content/shortcuts/shortcut-manager';
+
+describe('ShortcutManager', () => {
+  it('does not prevent default or stop propagation so site functionality works alongside shortcuts', () => {
+    const video = document.createElement('video');
+    document.body.appendChild(video);
+    video.volume = 0.5;
+
+    const mockControllerManager = {
+      getAllControllers: () => [{ video } as any]
+    } as any;
+
+    const manager = new ShortcutManager(mockControllerManager, {
+      seekInterval: 5,
+      shortcuts: {
+        volumeDown: 'ArrowDown',
+        volumeUp: 'ArrowUp',
+        togglePlay: 'Space',
+        seekBackward: 'ArrowLeft',
+        seekForward: 'ArrowRight',
+        toggleMute: 'KeyM',
+        toggleFullscreen: 'KeyF'
+      }
+    });
+
+    manager.start();
+
+    let siteListenerReceived = false;
+    const siteHandler = (e: KeyboardEvent) => {
+      siteListenerReceived = true;
+    };
+    window.addEventListener('keydown', siteHandler);
+
+    const event = new KeyboardEvent('keydown', {
+      key: 'ArrowDown',
+      code: 'ArrowDown',
+      bubbles: true,
+      cancelable: true
+    });
+
+    window.dispatchEvent(event);
+
+    // Extension shortcut functionality should have executed (volume decreased from 0.5 to 0.4)
+    expect(video.volume).toBe(0.4);
+
+    // Site listener should still receive the event
+    expect(siteListenerReceived).toBe(true);
+
+    // Default action should NOT have been prevented
+    expect(event.defaultPrevented).toBe(false);
+
+    window.removeEventListener('keydown', siteHandler);
+    manager.stop();
+    video.remove();
+  });
+});
+

@@ -80,8 +80,8 @@ export class ShortcutManager {
       const video = targetController.video;
       const seekSecs = this.config.seekInterval || 5;
 
-      e.preventDefault();
-      e.stopPropagation();
+      // Do not prevent default or stop propagation so that shortcuts work alongside
+      // host site functionality (e.g. reels navigation on Instagram) instead of overriding it.
 
       if (isPlay) {
         if (video.paused) {
