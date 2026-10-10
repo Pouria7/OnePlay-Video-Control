@@ -19,6 +19,7 @@ export class YouTubeAdapter implements SiteAdapter {
 
   // Ensures we only attach the mouseleave listener once per preview element
   private boundPreviews = new WeakSet<Element>();
+  private audioInterceptors = new WeakSet<HTMLVideoElement>();
 
   matches(url: URL): boolean {
     return domainMatches(url.hostname, 'youtube.com');
@@ -31,6 +32,30 @@ export class YouTubeAdapter implements SiteAdapter {
       visibilityThreshold: 0.2,
       allowMultiple: false // Only one active preview at a time
     };
+  }
+
+  /**
+   * Suppresses YouTube's automatic volume muting and event listeners on preview videos.
+   */
+  private interceptVideoAudio(video: HTMLVideoElement): void {
+    if (this.audioInterceptors.has(video)) return;
+    this.audioInterceptors.add(video);
+
+    // 1. Block volumechange events from propagating to YouTube's internal handlers
+    video.addEventListener(
+      'volumechange',
+      (e) => {
+        // Stop YouTube's inline preview scripts from catching the event and resetting volume
+        e.stopImmediatePropagation();
+      },
+      true // Capture phase intercepts before YouTube's bubble/target listeners
+    );
+
+    // 2. Clear any HTML attributes or properties forcing mute
+    video.removeAttribute('muted');
+    if (video.muted) {
+      video.muted = false;
+    }
   }
 
   /**
@@ -98,6 +123,7 @@ export class YouTubeAdapter implements SiteAdapter {
   }
 
   onVideoDetected(video: HTMLVideoElement): void {
+    this.interceptVideoAudio(video);
     const preview = video.closest('ytd-video-preview') || document.querySelector('ytd-video-preview');
     if (preview) {
       this.bindPreviewElement(preview);
@@ -105,6 +131,7 @@ export class YouTubeAdapter implements SiteAdapter {
   }
 
   onVideoActivated(video: HTMLVideoElement): void {
+    this.interceptVideoAudio(video);
     const preview = video.closest('ytd-video-preview') || document.querySelector('ytd-video-preview');
     if (preview) {
       this.bindPreviewElement(preview);
