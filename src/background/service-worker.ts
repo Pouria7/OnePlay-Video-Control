@@ -6,6 +6,7 @@
  */
 
 import { DEFAULT_GLOBAL_SETTINGS } from '../storage/types';
+import { isDownloadRestricted } from '../utils/download-policy';
 
 chrome.runtime.onInstalled.addListener(async (details) => {
   if (details.reason === 'install') {
@@ -37,7 +38,7 @@ chrome.runtime.onInstalled.addListener(async (details) => {
 });
 
 // Listener for runtime messages from popup or content scripts
-chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === 'PING') {
     sendResponse({ status: 'PONG', version: chrome.runtime.getManifest().version });
     return true;
@@ -46,6 +47,13 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   if (message.type === 'DOWNLOAD_VIDEO') {
     const url = message.url;
     const filename = message.filename || `video_${Date.now()}.mp4`;
+
+    // Enforce Chrome Web Store policies: Disallow downloads from restricted domains (e.g. YouTube)
+    const senderUrl = sender.tab?.url || sender.url || '';
+    if (isDownloadRestricted(senderUrl) || isDownloadRestricted(url)) {
+      sendResponse({ success: false, error: 'Downloads are restricted on this platform per store policy.' });
+      return true;
+    }
 
     // Background service worker cannot download page-scoped blob: URLs across origins
     if (typeof url === 'string' && url.startsWith('blob:')) {

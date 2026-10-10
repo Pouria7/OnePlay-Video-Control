@@ -12,6 +12,7 @@
 
 import { getBestVideoSource, deriveFilename } from './video-source';
 import fixWebmDuration from 'webm-duration-fix';
+import { isDownloadRestricted } from '../../utils/download-policy';
 
 export interface RecordingManagerCallbacks {
   onRecordingStart: () => void;
@@ -50,6 +51,11 @@ export class RecordingManager {
    *  - Else → tries direct download; only records as last resort
    */
   async download(): Promise<void> {
+    if (isDownloadRestricted()) {
+      this.callbacks.onFeedback('⚠️ Download disabled on this site');
+      return;
+    }
+
     if (this.isRecordingStream) {
       this.stop(true);
       return;

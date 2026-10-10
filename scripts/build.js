@@ -115,12 +115,26 @@ async function runBuild() {
     }
   });
 
-  // 5. Copy manifest and icons from public/ to dist/
+  // 5. Copy manifest and icons to dist/
   console.log('📋 Copying manifest.json and icons to dist...');
-  fs.copyFileSync(
-    path.resolve(rootDir, 'public/manifest.json'),
-    path.resolve(distDir, 'manifest.json')
-  );
+  // Prefer root manifest.json if exists, sync version with package.json
+  const manifestSrcPath = fs.existsSync(path.resolve(rootDir, 'manifest.json'))
+    ? path.resolve(rootDir, 'manifest.json')
+    : path.resolve(rootDir, 'public/manifest.json');
+
+  const pkgJson = JSON.parse(fs.readFileSync(path.resolve(rootDir, 'package.json'), 'utf8'));
+  const manifestContent = JSON.parse(fs.readFileSync(manifestSrcPath, 'utf8'));
+  manifestContent.version = pkgJson.version || manifestContent.version;
+
+  fs.writeFileSync(path.resolve(distDir, 'manifest.json'), JSON.stringify(manifestContent, null, 2));
+
+  // Also sync public/manifest.json and root manifest.json so they never diverge
+  if (fs.existsSync(path.resolve(rootDir, 'public/manifest.json'))) {
+    fs.writeFileSync(path.resolve(rootDir, 'public/manifest.json'), JSON.stringify(manifestContent, null, 2));
+  }
+  if (fs.existsSync(path.resolve(rootDir, 'manifest.json'))) {
+    fs.writeFileSync(path.resolve(rootDir, 'manifest.json'), JSON.stringify(manifestContent, null, 2));
+  }
 
   const iconsDistDir = path.resolve(distDir, 'icons');
   if (!fs.existsSync(iconsDistDir)) {

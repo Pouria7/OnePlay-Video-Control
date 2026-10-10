@@ -86,10 +86,10 @@ https://universal-video-controls.pages.dev/privacy
 ```text
 1. Install and open any webpage with an HTML5 video (e.g. public Instagram post or news site).
 2. The control bar docks onto the video. Test seek, volume, speed, and play/pause.
-3. Right-click the bar to test Download / Record.
-4. Click the extension toolbar icon to open popup settings.
-No login or credentials required.
-Note: DRM-protected streams cannot be captured (browser security compliant), and download is disabled on main YouTube player.
+3. On supported sites, right-click the bar to test Download / Record.
+4. Per Chrome Web Store policy (Blue Zinc), downloading and stream recording are strictly and completely disabled on YouTube (youtube.com, youtu.be). Context menu and download triggers do not activate on YouTube.
+5. Click the extension toolbar icon to open popup settings.
+No login or credentials required. DRM-protected streams cannot be captured.
 ```
 
 ---

@@ -13,8 +13,6 @@ import {
   checkForUpdates,
   detectBrowser,
   getBrowserDisplayName,
-  getStoreUrlForBrowser,
-  CLOUDFLARE_PAGES_UPDATE_URL,
   UpdateCheckResult,
   getCurrentVersion
 } from '../utils/update-checker';

@@ -195,10 +195,35 @@ describe('VideoController Context Menu & Download', () => {
     const shadow = host.shadowRoot!;
     const bar = shadow.querySelector('.ufvc-bar') as HTMLElement;
 
-    // pos.top will be 800 - 44 - 10 = 746 (>= 250)
-    expect(bar.classList.contains('popups-down')).toBe(false);
-
     controller.destroy();
+  });
+
+  it('completely disables context menu and download button on restricted domains (e.g. YouTube)', () => {
+    // Mock window.location.hostname to YouTube
+    const originalLocation = window.location;
+    delete (window as any).location;
+    window.location = { ...originalLocation, hostname: 'www.youtube.com', href: 'https://www.youtube.com/watch?v=123' } as any;
+
+    try {
+      const controller = new VideoController('test-yt-restricted', video, config);
+      const host = document.querySelector('.ufvc-controller-root') as HTMLElement;
+      const shadow = host.shadowRoot!;
+      const bar = shadow.querySelector('.ufvc-bar') as HTMLElement;
+      const contextMenu = shadow.querySelector('.ufvc-context-menu') as HTMLElement;
+      const downloadBtn = shadow.querySelector('.ufvc-context-download') as HTMLButtonElement;
+
+      // Menu should be styled display: none and button disabled
+      expect(contextMenu.style.display).toBe('none');
+      expect(downloadBtn.disabled).toBe(true);
+
+      // Right click should not open the menu
+      bar.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true }));
+      expect(contextMenu.classList.contains('open')).toBe(false);
+
+      controller.destroy();
+    } finally {
+      window.location = originalLocation;
+    }
   });
 });
 

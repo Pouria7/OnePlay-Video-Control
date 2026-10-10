@@ -13,6 +13,7 @@ import { ResolvedConfig } from '../../storage/types';
 import { themeEngine } from '../../themes/theme-engine';
 import { formatTime } from '../../utils/dom';
 import { RecordingManager } from './recording-manager';
+import { isDownloadRestricted } from '../../utils/download-policy';
 
 /** CSS state classes toggled on shadow-UI elements. */
 const CLASS = {
@@ -98,6 +99,13 @@ export class VideoController {
 
   private syncInitialState(): void {
     this.setMinimalMode(this.config.controlsLayout === 'minimal');
+    // TODO: When additional context menu items are added in the future, do not hide the entire
+    // context menu. Instead, conditionally render/hide only the download item (ui.contextDownloadBtn)
+    // while keeping other context menu options visible and functional on restricted domains.
+    if (isDownloadRestricted()) {
+      this.ui.contextMenu.style.display = 'none';
+      this.ui.contextDownloadBtn.disabled = true;
+    }
     this.updatePlayState();
     this.updateTimeDisplay();
     this.updateVolumeUI();
@@ -385,8 +393,12 @@ export class VideoController {
     this.ui.container.addEventListener('click', handleContainerClick);
     this.cleanupFns.push(() => this.ui.container.removeEventListener('click', handleContainerClick));
 
-    // Context menu
+    // Context menu (only on non-restricted domains for now because download is the sole item)
+    // TODO: Allow context menu to open on restricted domains if other non-download items are present.
     const handleContextMenu = (e: MouseEvent) => {
+      if (isDownloadRestricted()) {
+        return;
+      }
       e.preventDefault();
       e.stopPropagation();
       this.showContextMenu(e);
@@ -399,6 +411,10 @@ export class VideoController {
       e.stopPropagation();
       e.preventDefault();
       this.closeContextMenu();
+      if (isDownloadRestricted()) {
+        this.showDownloadFeedback('⚠️ Not available on this site');
+        return;
+      }
       void this.recording.download();
     };
     this.ui.contextDownloadBtn.addEventListener('click', handleDownloadClick);
@@ -554,6 +570,9 @@ export class VideoController {
   }
 
   private showContextMenu(e: MouseEvent): void {
+    if (isDownloadRestricted()) {
+      return;
+    }
     this.closeSpeedMenu();
     this.resetAutoHideTimer();
 
