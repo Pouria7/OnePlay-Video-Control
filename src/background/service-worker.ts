@@ -1,5 +1,5 @@
 /**
- * Universal Video Controls - Background Service Worker (Manifest V3)
+ * OnePlay - Video Control - Background Service Worker (Manifest V3)
  *
  * Ephemeral background service worker managing extension lifecycle, default storage,
  * and icon badges. Never retains mutable state in variables across executions.

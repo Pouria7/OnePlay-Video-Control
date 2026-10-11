@@ -8,7 +8,7 @@ const rootDir = path.resolve(__dirname, '..');
 const distDir = path.resolve(rootDir, 'dist');
 
 async function runBuild() {
-  console.log('🚀 Starting Universal Video Controls extension build...');
+  console.log('🚀 Starting OnePlay - Video Control extension build...');
 
   // Clean dist directory
   if (fs.existsSync(distDir)) {

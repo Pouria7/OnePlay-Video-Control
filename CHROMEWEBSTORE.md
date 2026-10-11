@@ -15,7 +15,7 @@ Reliable play, seek, speed and volume controls for any web video that site overl
 ```text
 Take full control of any video on the web with a clean playback bar that website overlays can't block.
 
-Ever tried to scrub through a video on a social media site, only to find the site has covered the player with invisible layers that pause, mute, or open the post when you click? Universal Video Controls puts its own control bar right on top of the video, so you can always play, pause, and jump to any moment. The video stays where it is on the page.
+Ever tried to scrub through a video on a social media site, only to find the site has covered the player with invisible layers that pause, mute, or open the post when you click? OnePlay - Video Control puts its own control bar right on top of the video, so you can always play, pause, and jump to any moment. The video stays where it is on the page.
 
 KEY FEATURES
 
@@ -30,7 +30,7 @@ KEY FEATURES
 
 HOW TO USE IT
 
-1. Install Universal Video Controls.
+1. Install OnePlay - Video Control.
 2. Open any website with videos (Instagram, Twitter/X, news sites, etc.).
 3. The control bar docks onto the active video automatically.
 4. Drag the scrub bar or use keyboard shortcuts.

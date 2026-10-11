@@ -1,5 +1,5 @@
 /**
- * Content Script Coordinator for Universal Video Controls
+ * Content Script Coordinator for OnePlay - Video Control
  *
  * Coordinates VideoRegistry, VideoObserver, SiteAdapters, ControllerManager,
  * and ShortcutManager while remaining completely isolated from host-site DOM hierarchies.

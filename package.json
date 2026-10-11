@@ -1,7 +1,7 @@
 {
   "name": "universal-video-controls",
   "version": "1.0.2",
-  "description": "Universal Video Controls for HTML5 videos across the web, designed for resilient overlay-independent playback.",
+  "description": "OnePlay - Video Control for HTML5 videos across the web, designed for resilient overlay-independent playback.",
   "type": "module",
   "scripts": {
     "dev": "vite build --watch",

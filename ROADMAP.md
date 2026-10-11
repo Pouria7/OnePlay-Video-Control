@@ -1,4 +1,4 @@
-# Roadmap & Feature Ideas (Universal Video Controls)
+# Roadmap & Feature Ideas (OnePlay - Video Control)
 
 این فایل برای ثبت ایده‌ها، بهبودهای فنی و قابلیت‌های نسخه‌های بعدی پروژه ایجاد شده است.
 

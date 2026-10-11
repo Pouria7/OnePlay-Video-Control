@@ -1,5 +1,5 @@
 /**
- * Popup Script for Universal Video Controls
+ * Popup Script for OnePlay - Video Control
  */
 
 import { storageManager } from '../storage/storage-manager';

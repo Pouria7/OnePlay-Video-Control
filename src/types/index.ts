@@ -1,5 +1,5 @@
 /**
- * Core type definitions for Universal Video Controls
+ * Core type definitions for OnePlay - Video Control
  */
 
 export enum VideoLifecycleState {

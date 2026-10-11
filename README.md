@@ -1,8 +1,8 @@
-# Universal Video Controls (Chrome Extension - Manifest V3)
+# OnePlay - Video Control (Chrome Extension - Manifest V3)
 
 A robust, website-independent video controller for HTML5 `<video>` elements across the web. Designed to remain completely resilient against host-site layout modifications, CSS class obfuscation, and transparent click-blocking overlay layers (such as those on Instagram Web).
 
-> **Note on Naming & Purpose**: Universal Video Controls provides an on-video control overlay bar directly docked to HTML5 videos. It does **not** detach or float the video element itself (avoiding the confusion associated with "Picture-in-Picture" or "floating video players"). It gives you full playback control, video downloading, and live stream recording without modifying host page structures.
+> **Note on Naming & Purpose**: OnePlay - Video Control provides an on-video control overlay bar directly docked to HTML5 videos. It does **not** detach or float the video element itself (avoiding the confusion associated with "Picture-in-Picture" or "floating video players"). It gives you full playback control, video downloading, and live stream recording without modifying host page structures.
 
 ---
 
@@ -65,7 +65,7 @@ A robust, website-independent video controller for HTML5 `<video>` elements acro
 
 Many modern web platforms (YouTube, Twitter/X, Twitch, Instagram, etc.) deliver video using MediaSource Extensions (MSE) or chunked streams (HLS/DASH). In these cases, the video element's `src` is an ephemeral internal pointer like `blob:https://...` rather than a direct downloadable file.
 
-Universal Video Controls solves this with a **3-tier download engine**:
+OnePlay - Video Control solves this with a **3-tier download engine**:
 
 ```text
 User clicks Download (Context Menu)
@@ -310,7 +310,7 @@ This bundles all modules into `dist/`, including:
 3. Click the **Load unpacked** button in the top left.
 4. Select the `dist/` directory inside this project:
    `d:\Workspace\1 My Github Projects\Extentions\CD Video Player\dist`
-5. The extension **"Universal Video Controls"** will appear in your extensions list.
+5. The extension **"OnePlay - Video Control"** will appear in your extensions list.
 6. Pin the extension icon to your toolbar and visit Instagram or YouTube to test!
 
 ---

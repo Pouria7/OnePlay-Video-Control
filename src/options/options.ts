@@ -690,7 +690,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (updateAvailableCard) {
         updateAvailableCard.style.display = 'block';
         if (aboutReleaseTitle) {
-          aboutReleaseTitle.textContent = res.versionInfo.title || 'Universal Video Controls Update';
+          aboutReleaseTitle.textContent = res.versionInfo.title || 'OnePlay - Video Control Update';
         }
         if (aboutReleaseMeta) {
           aboutReleaseMeta.textContent = `Version v${res.latestVersion}`;
@@ -715,7 +715,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     } else {
       // Up to date state
       updateStatusNotice.className = 'update-notice up-to-date';
-      updateNoticeText.textContent = `You are running the latest version of Universal Video Controls (v${installedVer}).`;
+      updateNoticeText.textContent = `You are running the latest version of OnePlay - Video Control (v${installedVer}).`;
       if (updateAvailableCard) updateAvailableCard.style.display = 'none';
       if (optUpdateBadge) optUpdateBadge.style.display = 'none';
     }
