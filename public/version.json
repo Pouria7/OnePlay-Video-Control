@@ -3,11 +3,11 @@
   "message": "A new version of OnePlay - Video Control is available.",
   "browsers": {
     "chrome": {
-      "version": "1.0.0",
+      "version": "0.9.2",
       "url": "https://chromewebstore.google.com/detail/universal-video-controls"
     },
     "default": {
-      "version": "1.0.0",
+      "version": "0.9.2",
       "url": "https://chromewebstore.google.com/detail/universal-video-controls"
     }
   }

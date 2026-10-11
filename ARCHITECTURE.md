@@ -1,6 +1,6 @@
 # Project Architecture
 
-Universal Video Controls is built as a website-agnostic, overlay-resilient video enhancement platform for Manifest V3. 
+OnePlay - Video Controls is built as a website-agnostic, overlay-resilient video enhancement platform for Manifest V3. 
 
 The architecture strictly adheres to a core philosophical invariant: **Complete DOM Decoupling**. The extension never mounts UI inside host website containers or relies on host site class hierarchies.
 

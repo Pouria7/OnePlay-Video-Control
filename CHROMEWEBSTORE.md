@@ -75,7 +75,7 @@ Gives users reliable control over HTML5 videos on any website: an overlay-immune
 
 **Privacy Policy URL:**
 ```text
-https://universal-video-controls.pages.dev/privacy
+https://anaspect-oneplay.pages.dev/privacy
 ```
 
 ---

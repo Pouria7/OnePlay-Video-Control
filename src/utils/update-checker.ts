@@ -44,7 +44,7 @@ export interface UpdateCheckResult {
   error?: string;
 }
 
-export const CLOUDFLARE_PAGES_UPDATE_URL = 'https://universal-video-controls.pages.dev/version.json';
+export const CLOUDFLARE_PAGES_UPDATE_URL = 'https://anaspect-oneplay.pages.dev/version.json';
 
 const CACHE_KEY = 'ufvc_update_cache';
 const DISMISSED_KEY = 'ufvc_dismissed_update_version';
