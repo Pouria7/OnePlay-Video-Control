@@ -91,7 +91,7 @@ export function getBrowserRelease(
 ): BrowserRelease {
   const fallbackChrome: BrowserRelease = {
     version: '1.0.0',
-    url: 'https://chromewebstore.google.com/detail/universal-video-controls'
+    url: 'https://chromewebstore.google.com/detail/oneplay-video-control/gpmickcblelmgkfheifkhnhehhmcfahp'
   };
 
   if (!versionInfo) {

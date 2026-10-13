@@ -4,11 +4,11 @@
   "browsers": {
     "chrome": {
       "version": "0.9.2",
-      "url": "https://chromewebstore.google.com/detail/universal-video-controls"
+      "url": "https://chromewebstore.google.com/detail/oneplay-video-control/gpmickcblelmgkfheifkhnhehhmcfahp"
     },
     "default": {
       "version": "0.9.2",
-      "url": "https://chromewebstore.google.com/detail/universal-video-controls"
+      "url": "https://chromewebstore.google.com/detail/oneplay-video-control/gpmickcblelmgkfheifkhnhehhmcfahp"
     }
   }
 }
