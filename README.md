@@ -183,10 +183,6 @@ Add an entry to `BUILTIN_THEMES` in `src/themes/default-themes.ts`, then add a m
 
 ---
 
-## Roadmap
-
-Planned ideas include an A-B section looper, frame screenshots, quick Picture-in-Picture, and subtitle tools. See [ROADMAP.md](ROADMAP.md).
-
 ## Contributing
 
 Contributions are welcome!
