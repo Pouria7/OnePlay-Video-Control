@@ -1,27 +1,72 @@
-# OnePlay - Video Control (Chrome Extension - Manifest V3)
+<div align="center">
+  <img src="public/icons/icon-128.png" width="110" height="110" alt="OnePlay Video Control Logo" />
+  <h1>OnePlay — Video Control</h1>
+  <p><b>A robust, website-independent video controller for HTML5 <code>&lt;video&gt;</code> elements across the web.</b><br>
+  Built with Manifest V3 • Immune to overlay click-hijacking, layout modifications, and CSS obfuscation.</p>
 
-A robust, website-independent video controller for HTML5 `<video>` elements across the web. Designed to remain completely resilient against host-site layout modifications, CSS class obfuscation, and transparent click-blocking overlay layers (such as those on Instagram Web).
+  <p>
+    <a href="https://chromewebstore.google.com/detail/oneplay-video-control/gpmickcblelmgkfheifkhnhehhmcfahp">
+      <img src="https://img.shields.io/badge/Chrome_Web_Store-Available_Now-4285F4?style=for-the-badge&logo=googlechrome&logoColor=white" alt="Available on Chrome Web Store" />
+    </a>
+    <img src="https://img.shields.io/badge/Manifest-V3-success?style=for-the-badge&logo=google" alt="Manifest V3" />
+    <img src="https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge" alt="License MIT" />
+  </p>
 
-> **Note on Naming & Purpose**: OnePlay - Video Control provides an on-video control overlay bar directly docked to HTML5 videos. It does **not** detach or float the video element itself (avoiding the confusion associated with "Picture-in-Picture" or "floating video players"). It gives you full playback control, video downloading, and live stream recording without modifying host page structures.
+  <p>
+    <a href="https://chromewebstore.google.com/detail/oneplay-video-control/gpmickcblelmgkfheifkhnhehhmcfahp">
+      👉 <b>Add to Google Chrome (Official Web Store)</b> 👈
+    </a>
+  </p>
+</div>
+
+---
+
+## 📸 Showcase & Preview
+
+<div align="center">
+  <img src="promo/3.gif" alt="OnePlay in Action" width="100%" />
+  <p><i>Live demonstration: seamless playback control and stream recording without page interference</i></p>
+</div>
+
+<table align="center" width="100%">
+  <tr>
+    <td align="center" width="50%" valign="top">
+      <img src="promo/4.png" alt="In-Video Controller Overlay" width="100%" /><br>
+      <b>Overlay-Immune Video Controller Bar</b>
+      <p>Works seamlessly over complex players, Shorts, and social media reels.</p>
+    </td>
+    <td align="center" width="50%" valign="top">
+      <img src="promo/1.png" alt="Extension Quick Settings Popup" width="100%" /><br>
+      <b>Quick Settings Popup Menu</b>
+      <p>Instant access to themes, controller positions, layouts, and site overrides.</p>
+    </td>
+  </tr>
+</table>
+
+<div align="center">
+  <img src="promo/2.png" alt="Full Options & Configuration Dashboard" width="100%" /><br>
+  <b>Comprehensive Options Dashboard</b>
+  <p>Universal/Whitelist modes, detection sensitivity thresholds, shortcut customization, and theme builder.</p>
+</div>
 
 ---
 
 ## Table of Contents
 
-1. [Key Features](#key-features)
-2. [Video Downloader & Live Stream Recorder](#video-downloader--live-stream-recorder)
-3. [Core Architecture & Design Principle](#core-architecture--design-principle)
-4. [Detection & Selection Engine](#detection--selection-engine)
-5. [Site Adapter Architecture](#site-adapter-architecture)
-6. [Configuration & Precedence Order](#configuration--precedence-order)
-7. [Themes System](#themes-system)
-8. [Keyboard Shortcuts](#keyboard-shortcuts)
-9. [Installation & Development](#installation--development)
-10. [Loading Unpacked Extension in Chrome](#loading-unpacked-extension-in-chrome)
-11. [How to Add a New Site Adapter](#how-to-add-a-new-site-adapter)
-12. [How to Add a New Theme](#how-to-add-a-new-theme)
-13. [Future Feature Plugins](#future-feature-plugins)
-14. [Project Directory Structure](#project-directory-structure)
+1. [Showcase & Preview](#-showcase--preview)
+2. [Key Features](#key-features)
+3. [Video Downloader & Live Stream Recorder](#video-downloader--live-stream-recorder)
+4. [Core Architecture & Design Principle](#core-architecture--design-principle)
+5. [Detection & Selection Engine](#detection--selection-engine)
+6. [Site Adapter Architecture](#site-adapter-architecture)
+7. [Configuration & Precedence Order](#configuration--precedence-order)
+8. [Themes System](#themes-system)
+9. [Keyboard Shortcuts](#keyboard-shortcuts)
+10. [Installation & Development](#installation--development)
+11. [Loading Unpacked Extension in Chrome](#loading-unpacked-extension-in-chrome)
+12. [How to Add a New Site Adapter](#how-to-add-a-new-site-adapter)
+13. [How to Add a New Theme](#how-to-add-a-new-theme)
+14. [Future Feature Plugins](#future-feature-plugins)
 
 ---
 
@@ -270,7 +315,19 @@ All shortcuts are fully customizable via the Options Dashboard and Popup recorde
 
 ## Installation & Development
 
-### Prerequisites
+### 🚀 Chrome Web Store (Recommended for Users)
+
+Install the extension directly with one click from the official store:
+
+[![Available in the Chrome Web Store](https://img.shields.io/badge/Install_from-Chrome_Web_Store-4285F4?style=for-the-badge&logo=googlechrome&logoColor=white)](https://chromewebstore.google.com/detail/oneplay-video-control/gpmickcblelmgkfheifkhnhehhmcfahp)
+
+👉 **[OnePlay - Video Control on Chrome Web Store](https://chromewebstore.google.com/detail/oneplay-video-control/gpmickcblelmgkfheifkhnhehhmcfahp)**
+
+---
+
+### 🛠️ Local Development Setup
+
+#### Prerequisites
 
 - Node.js $\ge 18$ (tested on v22)
 - npm $\ge 9$
@@ -389,57 +446,6 @@ The extension is designed with a provider interface (`src/content/plugins/featur
 
 ---
 
-## Project Directory Structure
-
-```text
-universal-video-controls/
-├── manifest.json              # Source Manifest V3
-├── package.json               # Dependencies & scripts
-├── tsconfig.json              # TypeScript strict configuration
-├── vite.config.ts             # Vite & Vitest configuration
-├── CHROMEWEBSTORE.md          # Chrome Web Store listing metadata & justifications
-├── README.md                  # Comprehensive documentation
-├── scripts/
-│   └── build.js               # Multi-target extension bundler
-├── public/
-│   ├── manifest.json          # Manifest copied to dist
-│   └── icons/                 # Generated 16, 48, 128px PNG icons
-├── src/
-│   ├── types/                 # Shared domain types
-│   ├── utils/                 # Geometry, DOM, throttle, and URL utilities
-│   ├── storage/               # Storage schemas & precedence resolution
-│   ├── themes/                # Theme engine & built-in themes
-│   ├── background/
-│   │   └── service-worker.ts  # Manifest V3 service worker (downloads & lifecycle)
-│   ├── content/
-│   │   ├── detection/         # Registry, candidate filter, scorer, selector
-│   │   ├── adapters/          # Site adapters (Instagram, YouTube, Generic)
-│   │   ├── controller/        # Control bar, Shadow DOM, position tracker, downloader/recorder
-│   │   ├── shortcuts/         # Keyboard shortcut dispatcher
-│   │   ├── plugins/           # Future feature plugin contracts
-│   │   └── index.ts           # Content coordinator
-│   ├── options/
-│   │   ├── options.html       # Full options & settings dashboard
-│   │   ├── options.css        # Dashboard styling
-│   │   └── options.ts         # Options logic & shortcuts recorder
-│   └── popup/
-│       ├── popup.html         # Quick settings popup
-│       ├── popup.css          # Popup styling
-│       └── popup.ts           # Popup settings manager
-├── tests/                     # Vitest unit tests
-│   ├── candidate-filter.test.ts
-│   ├── video-scorer.test.ts
-│   ├── video-selector.test.ts
-│   ├── video-registry.test.ts
-│   ├── context-menu.test.ts
-│   ├── shortcuts.test.ts
-│   ├── geometry.test.ts
-│   ├── config-precedence.test.ts
-│   └── url-matching.test.ts
-└── dist/                      # Final unpackable Chrome extension
-```
-
----
 
 ## License
 
