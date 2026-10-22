@@ -1,6 +1,6 @@
 {
   "title": "OnePlay - Video Control Update",
-  "message": "A new version of OnePlay - Video Control is available.",
+  "message": "A new version of OnePlay is available! Chrome will automatically update your extension soon",
   "browsers": {
     "chrome": {
       "version": "0.9.3",
