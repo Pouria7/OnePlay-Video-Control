@@ -113,6 +113,10 @@ export class ControllerManager {
     return this.controllers.size;
   }
 
+  getCurrentConfig(): ResolvedConfig {
+    return this.currentConfig;
+  }
+
   /**
    * Destroys all active controllers immediately
    */

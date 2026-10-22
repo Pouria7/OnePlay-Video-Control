@@ -51,7 +51,7 @@ export class YouTubeAdapter implements SiteAdapter {
       true // Capture phase intercepts before YouTube's bubble/target listeners
     );
 
-    // 2. Clear any HTML attributes or properties forcing mute
+    // 2. Clear any HTML attributes forcing mute on detected preview
     video.removeAttribute('muted');
     if (video.muted) {
       video.muted = false;

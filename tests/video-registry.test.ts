@@ -59,7 +59,7 @@ describe('VideoRegistry with Adapter Hooks', () => {
   it('updates video eligibility when hooks change dynamically via setHooks', () => {
     registry = new VideoRegistry();
 
-    const rec1 = registry.register(video1, config);
+    registry.register(video1, config);
     const rec2 = registry.register(video2, config);
 
     expect(registry.getCandidates().length).toBe(2);

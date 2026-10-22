@@ -6,11 +6,23 @@
  *
  * Includes periodic position verification and mousemove tracking to handle
  * dynamically moved videos (e.g. YouTube moving single preview element across horizontal cards).
+ *
+ * Also owns the manual drag offset: the user can move the controller relative to
+ * its docked position. The offset is session-only (per controller instance) and is
+ * always clamped to video-relative bounds (see `calculateDragBounds`).
  */
 
-import { calculateControllerPosition, PositionCoordinates } from '../../utils/geometry';
+import {
+  applyDragOffset,
+  calculateControllerPosition,
+  DragOffset,
+  PositionCoordinates
+} from '../../utils/geometry';
 import { rafThrottle } from '../../utils/throttle';
 import { ResolvedConfig } from '../../storage/types';
+
+const DOCK_MARGIN = 10;
+const POPUPS_DOWN_THRESHOLD = 250;
 
 export class PositionManager {
   private video: HTMLVideoElement;
@@ -24,6 +36,12 @@ export class PositionManager {
   private lastTop = -1;
   private lastWidth = -1;
   private lastHeight = -1;
+
+  /** Requested manual offset relative to the dock. */
+  private dragOffset: DragOffset = { dx: 0, dy: 0 };
+  /** Last docked (un-dragged) and final applied coordinates. */
+  private lastDock: PositionCoordinates | null = null;
+  private lastApplied: PositionCoordinates | null = null;
 
   constructor(
     video: HTMLVideoElement,
@@ -45,14 +63,51 @@ export class PositionManager {
    * Updates configuration and recalculates position
    */
   updateConfig(newConfig: ResolvedConfig): void {
+    const dockChanged =
+      newConfig.controllerPosition !== this.config.controllerPosition ||
+      newConfig.controlsLayout !== this.config.controlsLayout;
     this.config = newConfig;
+    if (dockChanged) this.dragOffset = { dx: 0, dy: 0 };
     this.updatePosition();
   }
 
+  // ─── Drag offset API ──────────────────────────────────────────────────
+
   /**
-   * Recalculates and applies fixed position coordinates
+   * Offset that is actually applied right now (after clamping). Use this as the
+   * starting point of a new drag so stale, clamped offsets never feel "sticky".
+   */
+  getEffectiveOffset(): DragOffset {
+    if (!this.lastDock || !this.lastApplied) return { ...this.dragOffset };
+    return {
+      dx: this.lastApplied.left - this.lastDock.left,
+      dy: this.lastApplied.top - this.lastDock.top
+    };
+  }
+
+  setDragOffset(offset: DragOffset): void {
+    this.dragOffset = { dx: offset.dx, dy: offset.dy };
+    this.applyPosition();
+  }
+
+  resetDragOffset(): void {
+    this.setDragOffset({ dx: 0, dy: 0 });
+  }
+
+  hasDragOffset(): boolean {
+    return this.dragOffset.dx !== 0 || this.dragOffset.dy !== 0;
+  }
+
+  // ─── Positioning ──────────────────────────────────────────────────────
+
+  /**
+   * Recalculates and applies fixed position coordinates (rAF-throttled).
    */
   updatePosition = rafThrottle((): void => {
+    this.applyPosition();
+  });
+
+  private applyPosition(): void {
     if (this.isDestroyed || !this.video.isConnected) return;
 
     const videoRect = this.video.getBoundingClientRect();
@@ -75,23 +130,28 @@ export class PositionManager {
     } else {
       const isNarrow = videoRect.width < 340;
       this.containerElement.classList.toggle('two-row', isNarrow);
-      controllerWidth = 390;
+      controllerWidth = 404;
       controllerHeight = isNarrow ? 62 : 44;
     }
 
-    const pos: PositionCoordinates = calculateControllerPosition(
+    const dock: PositionCoordinates = calculateControllerPosition(
       videoRect,
       controllerWidth,
       controllerHeight,
-      10,
+      DOCK_MARGIN,
       this.config.controllerPosition
     );
 
-    if (!pos.visible) {
+    if (!dock.visible) {
+      this.lastDock = this.lastApplied = null;
       this.hostElement.style.opacity = '0';
       this.hostElement.style.pointerEvents = 'none';
       return;
     }
+
+    const pos = applyDragOffset(videoRect, dock, this.dragOffset, this.config.controllerPosition);
+    this.lastDock = dock;
+    this.lastApplied = pos;
 
     this.hostElement.style.left = `${pos.left}px`;
     this.hostElement.style.top = `${pos.top}px`;
@@ -100,9 +160,9 @@ export class PositionManager {
     this.hostElement.style.opacity = '1';
     this.hostElement.style.pointerEvents = 'none';
 
-    // Show volume slider & speed menu downward when near top of viewport (< 250px)
-    this.containerElement.classList.toggle('popups-down', pos.top < 250);
-  });
+    // Show volume slider & speed menu downward when near top of viewport
+    this.containerElement.classList.toggle('popups-down', pos.top < POPUPS_DOWN_THRESHOLD);
+  }
 
   private attachListeners(): void {
     const handleUpdate = () => {

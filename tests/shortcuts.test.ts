@@ -193,7 +193,7 @@ describe('ShortcutManager', () => {
     manager.start();
 
     let siteListenerReceived = false;
-    const siteHandler = (e: KeyboardEvent) => {
+    const siteHandler = (_e: KeyboardEvent) => {
       siteListenerReceived = true;
     };
     window.addEventListener('keydown', siteHandler);

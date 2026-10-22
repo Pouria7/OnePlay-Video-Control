@@ -13,16 +13,19 @@ describe('VideoController Context Menu & Download', () => {
     document.body.appendChild(video);
 
     config = {
+      enabled: true,
+      minWidth: 160,
+      minHeight: 120,
+      visibilityThreshold: 0.7,
+      allowMultiple: true,
       theme: 'classic-dark',
       controlsLayout: 'full',
       controllerPosition: 'bottom-inside',
       autoHideDelay: 2500,
       seekInterval: 5,
-      volumeStep: 0.05,
-      enableShortcuts: true,
       shortcuts: {
         togglePlay: 'Space',
-        seekBack: 'ArrowLeft',
+        seekBackward: 'ArrowLeft',
         seekForward: 'ArrowRight',
         volumeUp: 'ArrowUp',
         volumeDown: 'ArrowDown',
@@ -65,7 +68,7 @@ describe('VideoController Context Menu & Download', () => {
   });
 
   it('triggers download message to chrome.runtime when download item is clicked', () => {
-    const sendMessageMock = vi.fn((msg, cb) => {
+    const sendMessageMock = vi.fn((_msg, cb) => {
       if (cb) cb({ success: true });
     });
     (globalThis as any).chrome = {
@@ -101,7 +104,7 @@ describe('VideoController Context Menu & Download', () => {
     controller.destroy();
   });
 
-  it('handles blob: URLs via stream recording or same-origin fetch without crashing', async () => {
+  it('handles blob: URLs via stream recording without crashing', async () => {
     video.src = 'blob:https://www.youtube.com/mock-stream-id-123';
 
     // Mock captureStream
@@ -149,7 +152,6 @@ describe('VideoController Context Menu & Download', () => {
   });
 
   it('toggles popups-down class when controller is near top of viewport (< 250px)', async () => {
-    // Mock getBoundingClientRect on video
     vi.spyOn(video, 'getBoundingClientRect').mockReturnValue({
       top: 50,
       bottom: 250,
@@ -169,61 +171,60 @@ describe('VideoController Context Menu & Download', () => {
     const shadow = host.shadowRoot!;
     const bar = shadow.querySelector('.ufvc-bar') as HTMLElement;
 
-    // pos.top will be bottom - 44 - 10 = 196 (< 300)
     expect(bar.classList.contains('popups-down')).toBe(true);
 
     controller.destroy();
   });
 
-  it('does not toggle popups-down when controller is far from top (>= 300px)', async () => {
-    vi.spyOn(video, 'getBoundingClientRect').mockReturnValue({
-      top: 500,
-      bottom: 800,
-      left: 100,
-      right: 500,
-      width: 400,
-      height: 300,
-      x: 100,
-      y: 500,
-      toJSON: () => {}
-    });
-
-    const controller = new VideoController('test-popups-bottom', video, config);
-    await new Promise((resolve) => setTimeout(resolve, 50));
-
+  it('renders volume and speed controls inside context menu in minimal mode', () => {
+    config.controlsLayout = 'minimal';
+    const controller = new VideoController('test-minimal-ctx', video, config);
     const host = document.querySelector('.ufvc-controller-root') as HTMLElement;
     const shadow = host.shadowRoot!;
     const bar = shadow.querySelector('.ufvc-bar') as HTMLElement;
+    const contextMenu = shadow.querySelector('.ufvc-context-menu') as HTMLElement;
+
+    bar.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, clientX: 30, clientY: 30 }));
+    expect(contextMenu.classList.contains('open')).toBe(true);
+
+    const volumeRow = contextMenu.querySelector('.ufvc-context-volume');
+    const speedRow = contextMenu.querySelector('.ufvc-context-speed');
+
+    expect(volumeRow).toBeTruthy();
+    expect(speedRow).toBeTruthy();
 
     controller.destroy();
   });
 
-  it('completely disables context menu and download button on restricted domains (e.g. YouTube)', () => {
-    // Mock window.location.hostname to YouTube
+  it('hides download item on restricted domains but keeps other items available in minimal mode', () => {
     const originalLocation = window.location;
     delete (window as any).location;
-    window.location = { ...originalLocation, hostname: 'www.youtube.com', href: 'https://www.youtube.com/watch?v=123' } as any;
+    window.location = {
+      ...originalLocation,
+      hostname: 'www.youtube.com',
+      href: 'https://www.youtube.com/watch?v=123'
+    } as any;
 
     try {
-      const controller = new VideoController('test-yt-restricted', video, config);
+      config.controlsLayout = 'minimal';
+      const controller = new VideoController('test-yt-minimal', video, config);
       const host = document.querySelector('.ufvc-controller-root') as HTMLElement;
       const shadow = host.shadowRoot!;
       const bar = shadow.querySelector('.ufvc-bar') as HTMLElement;
       const contextMenu = shadow.querySelector('.ufvc-context-menu') as HTMLElement;
-      const downloadBtn = shadow.querySelector('.ufvc-context-download') as HTMLButtonElement;
 
-      // Menu should be styled display: none and button disabled
-      expect(contextMenu.style.display).toBe('none');
-      expect(downloadBtn.disabled).toBe(true);
+      bar.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, clientX: 30, clientY: 30 }));
+      expect(contextMenu.classList.contains('open')).toBe(true);
 
-      // Right click should not open the menu
-      bar.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true }));
-      expect(contextMenu.classList.contains('open')).toBe(false);
+      const downloadItem = contextMenu.querySelector('.ufvc-context-download');
+      expect(downloadItem).toBeNull(); // Filtered out by isVisible()
+
+      const volumeRow = contextMenu.querySelector('.ufvc-context-volume');
+      expect(volumeRow).toBeTruthy();
 
       controller.destroy();
     } finally {
-      window.location = originalLocation;
+      (window as any).location = originalLocation;
     }
   });
 });
-

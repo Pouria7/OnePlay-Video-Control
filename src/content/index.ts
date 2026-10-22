@@ -60,7 +60,7 @@ class ContentCoordinator {
     // 4. Initialize Video Registry
     this.registry = new VideoRegistry(
       () => this.scheduleSelection(),
-      (videoId, video) => {
+      (_videoId, video) => {
         this.controllerManager.removeController(video);
         if (this.activeAdapter.onVideoDeactivated) {
           this.activeAdapter.onVideoDeactivated(video);
@@ -166,7 +166,7 @@ class ContentCoordinator {
       const newUrl = new URL(window.location.href);
       if (newUrl.href !== this.currentUrl.href) {
         this.currentUrl = newUrl;
-        const newDomain = getDomainFromUrl(newUrl);
+        const newDomain = getDomainFromUrl(newUrl.href);
         if (newDomain !== this.currentDomain) {
           this.currentDomain = newDomain;
           this.reloadConfiguration().then(() => {

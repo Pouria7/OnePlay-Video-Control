@@ -5,6 +5,9 @@
  * using an open Shadow Root and high z-index (2147483647).
  */
 
+import type { ShortcutsConfig } from '../../types';
+import { formatShortcutForDisplay } from '../../utils/shortcuts';
+
 export interface ShadowUIElements {
   host: HTMLElement;
   shadowRoot: ShadowRoot;
@@ -33,10 +36,13 @@ export interface ShadowUIElements {
   seekForwardBtn: HTMLButtonElement;
   miniProgressBar: HTMLElement;
   contextMenu: HTMLElement;
-  contextDownloadBtn: HTMLButtonElement;
+  dragHandle: HTMLElement;
   recIndicator: HTMLElement;
   recTime: HTMLElement;
 }
+
+/** Playback speed presets shared by the speed popup and the context menu. */
+export const SPEED_PRESETS: readonly number[] = [0.5, 0.75, 1, 1.25, 1.5, 1.75, 2, 2.5, 3];
 
 export const ICONS = {
   play: `<svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M8 5v14l11-7z"/></svg>`,
@@ -48,7 +54,9 @@ export const ICONS = {
   volumeMute: `<svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z"/></svg>`,
   fullscreen: `<svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>`,
   download: `<svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM17 13l-5 5-5-5h3V9h4v4h3z"/></svg>`,
-  stopRecord: `<svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><rect x="6" y="6" width="12" height="12" rx="2" fill="#ef4444"/></svg>`
+  stopRecord: `<svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><rect x="6" y="6" width="12" height="12" rx="2" fill="#ef4444"/></svg>`,
+  // 5-dot grip: a column of 3 dots next to a staggered column of 2
+  dragGrip: `<svg viewBox="0 0 10 18" fill="currentColor" width="10" height="18" aria-hidden="true"><circle cx="2.5" cy="3" r="1.6"/><circle cx="2.5" cy="9" r="1.6"/><circle cx="2.5" cy="15" r="1.6"/><circle cx="7.5" cy="6" r="1.6"/><circle cx="7.5" cy="12" r="1.6"/></svg>`
 };
 
 export function createShadowUI(): ShadowUIElements {
@@ -117,6 +125,7 @@ export function createShadowUI(): ShadowUIElements {
       display: contents;
     }
 
+    .ufvc-drag-handle { order: 0; }
     .ufvc-play-btn { order: 1; }
     .ufvc-seek-back-btn { order: 2; }
     .ufvc-seek-forward-btn { order: 3; }
@@ -189,8 +198,15 @@ export function createShadowUI(): ShadowUIElements {
     .ufvc-bar.minimal-mode .ufvc-progress-container,
     .ufvc-bar.minimal-mode .ufvc-volume-wrapper,
     .ufvc-bar.minimal-mode .ufvc-speed-wrapper,
-    .ufvc-bar.minimal-mode .ufvc-fullscreen-btn {
+    .ufvc-bar.minimal-mode .ufvc-fullscreen-btn,
+    .ufvc-bar.minimal-mode .ufvc-drag-handle {
       display: none !important;
+    }
+
+
+    .ufvc-bar.is-dragging,
+    .ufvc-bar.is-dragging * {
+      cursor: grabbing !important;
     }
 
     .ufvc-bar.minimal-mode .ufvc-row-bottom {
@@ -252,6 +268,32 @@ export function createShadowUI(): ShadowUIElements {
 
     .ufvc-btn:active {
       transform: scale(0.92);
+    }
+
+    /* Drag handle (5-dot grip) */
+    .ufvc-drag-handle {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      width: 14px;
+      height: 26px;
+      margin-left: -4px;
+      color: currentColor;
+      opacity: 0.45;
+      cursor: grab;
+      border-radius: 5px;
+      touch-action: none;
+      transition: opacity 0.15s ease, background 0.15s ease;
+    }
+
+    .ufvc-drag-handle:hover {
+      opacity: 0.9;
+      background: rgba(255, 255, 255, 0.1);
+    }
+
+    .ufvc-bar.is-dragging .ufvc-drag-handle {
+      opacity: 1;
     }
 
     .ufvc-time {
@@ -538,7 +580,7 @@ export function createShadowUI(): ShadowUIElements {
       backdrop-filter: blur(10px);
       -webkit-backdrop-filter: blur(10px);
       z-index: 100;
-      min-width: 140px;
+      min-width: 170px;
     }
 
     .ufvc-context-menu.open {
@@ -576,6 +618,140 @@ export function createShadowUI(): ShadowUIElements {
       flex-shrink: 0;
     }
 
+    .ufvc-context-separator {
+      height: 1px;
+      margin: 3px 6px;
+      background: rgba(255, 255, 255, 0.12);
+    }
+
+    /* Inline control rows (volume, speed, ...) */
+    .ufvc-context-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 4px 6px 4px 4px;
+      min-height: 32px;
+      color: #e5e7eb;
+      font-size: 12px;
+      font-weight: 500;
+    }
+
+    .ufvc-context-row-label {
+      flex: 1;
+      padding-left: 6px;
+      color: rgba(229, 231, 235, 0.85);
+    }
+
+    .ufvc-context-icon-btn,
+    .ufvc-stepper-btn,
+    .ufvc-stepper-value {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: transparent;
+      border: none;
+      color: inherit;
+      cursor: pointer;
+      border-radius: 6px;
+      transition: background 0.12s ease, color 0.12s ease;
+    }
+
+    .ufvc-context-icon-btn {
+      width: 28px;
+      height: 28px;
+      flex-shrink: 0;
+    }
+
+    .ufvc-context-icon-btn:hover,
+    .ufvc-stepper-btn:hover:not(:disabled),
+    .ufvc-stepper-value:hover {
+      background: rgba(255, 255, 255, 0.15);
+      color: #ffffff;
+    }
+
+    .ufvc-context-range {
+      -webkit-appearance: none;
+      appearance: none;
+      flex: 1;
+      min-width: 90px;
+      height: 4px;
+      border-radius: 9999px;
+      outline: none;
+      cursor: pointer;
+      background: linear-gradient(
+        to right,
+        var(--ufvc-accent, #38bdf8) 0 var(--ufvc-fill, 100%),
+        rgba(255, 255, 255, 0.2) var(--ufvc-fill, 100%) 100%
+      );
+    }
+
+    .ufvc-context-range::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: #ffffff;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
+      transition: transform 0.12s ease;
+    }
+
+    .ufvc-context-range::-webkit-slider-thumb:hover {
+      transform: scale(1.2);
+    }
+
+    .ufvc-context-range::-moz-range-thumb {
+      width: 12px;
+      height: 12px;
+      border: none;
+      border-radius: 50%;
+      background: #ffffff;
+    }
+
+    .ufvc-context-value {
+      min-width: 34px;
+      text-align: right;
+      font-size: 11px;
+      font-variant-numeric: tabular-nums;
+      color: rgba(229, 231, 235, 0.75);
+    }
+
+    .ufvc-stepper {
+      display: inline-flex;
+      align-items: center;
+      gap: 2px;
+      padding: 2px;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.07);
+    }
+
+    .ufvc-stepper-btn {
+      width: 26px;
+      height: 24px;
+      font-size: 15px;
+      font-weight: 600;
+      line-height: 1;
+    }
+
+    .ufvc-stepper-btn:disabled {
+      opacity: 0.3;
+      cursor: default;
+    }
+
+    .ufvc-stepper-value {
+      min-width: 48px;
+      height: 24px;
+      padding: 0 6px;
+      font-size: 12px;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      color: var(--ufvc-accent, #38bdf8);
+    }
+
+    .ufvc-stepper-value.is-default {
+      color: inherit;
+    }
+
     /* Stream Recording Indicator */
     .ufvc-rec-indicator {
       display: inline-flex;
@@ -611,14 +787,16 @@ export function createShadowUI(): ShadowUIElements {
 
   shadowRoot.appendChild(style);
 
-
-  //todo : update shortkey title base on config
   const container = document.createElement('div');
   container.className = 'ufvc-bar';
 
+  const speedItems = SPEED_PRESETS.map(
+    (s) => `<button class="ufvc-speed-item${s === 1 ? ' active' : ''}" data-speed="${s}">${s}x</button>`
+  ).join('');
+
   container.innerHTML = `
     <div class="ufvc-row-top">
-      <div class="ufvc-progress-container" title="Seek (Left/Right Arrow)">
+      <div class="ufvc-progress-container" title="Seek">
         <div class="ufvc-progress-track">
           <div class="ufvc-buffer-bar"></div>
           <div class="ufvc-progress-bar"></div>
@@ -637,16 +815,20 @@ export function createShadowUI(): ShadowUIElements {
     </div>
 
     <div class="ufvc-row-bottom">
-      <button class="ufvc-btn ufvc-play-btn" title="Play/Pause (Space)" aria-label="Play or Pause">
+      <div class="ufvc-drag-handle" title="Drag to move (double-click to reset)" aria-label="Move controller">
+        ${ICONS.dragGrip}
+      </div>
+
+      <button class="ufvc-btn ufvc-play-btn" title="Play/Pause" aria-label="Play or Pause">
         <span class="ufvc-icon-play">${ICONS.play}</span>
         <span class="ufvc-icon-pause" style="display:none;">${ICONS.pause}</span>
       </button>
 
-      <button class="ufvc-btn ufvc-seek-back-btn" title="Seek -5s (←)" aria-label="Seek Backward 5 Seconds">
+      <button class="ufvc-btn ufvc-seek-back-btn" title="Seek backward" aria-label="Seek backward">
         ${ICONS.seekBack}
       </button>
 
-      <button class="ufvc-btn ufvc-seek-forward-btn" title="Seek +5s (→)" aria-label="Seek Forward 5 Seconds">
+      <button class="ufvc-btn ufvc-seek-forward-btn" title="Seek forward" aria-label="Seek forward">
         ${ICONS.seekForward}
       </button>
 
@@ -657,23 +839,13 @@ export function createShadowUI(): ShadowUIElements {
           <span class="ufvc-icon-vol-mute" style="display:none;">${ICONS.volumeMute}</span>
         </button>
         <div class="ufvc-volume-slider-box">
-          <input type="range" class="ufvc-volume-slider" min="0" max="1" step="0.05" value="1" title="Volume (Up/Down Arrow)">
+          <input type="range" class="ufvc-volume-slider" min="0" max="1" step="0.05" value="1" title="Volume" aria-label="Volume">
         </div>
       </div>
 
       <div class="ufvc-speed-wrapper">
         <button class="ufvc-btn ufvc-speed-btn" title="Playback Speed">1x</button>
-        <div class="ufvc-speed-menu">
-          <button class="ufvc-speed-item" data-speed="0.5">0.5x</button>
-          <button class="ufvc-speed-item" data-speed="0.75">0.75x</button>
-          <button class="ufvc-speed-item active" data-speed="1">1x</button>
-          <button class="ufvc-speed-item" data-speed="1.25">1.25x</button>
-          <button class="ufvc-speed-item" data-speed="1.5">1.5x</button>
-          <button class="ufvc-speed-item" data-speed="1.75">1.75x</button>
-          <button class="ufvc-speed-item" data-speed="2">2x</button>
-          <button class="ufvc-speed-item" data-speed="2.5">2.5x</button>
-          <button class="ufvc-speed-item" data-speed="3">3x</button>
-        </div>
+        <div class="ufvc-speed-menu">${speedItems}</div>
       </div>
 
       <button class="ufvc-btn ufvc-fullscreen-btn" title="Toggle Fullscreen" aria-label="Toggle Fullscreen">
@@ -687,12 +859,7 @@ export function createShadowUI(): ShadowUIElements {
        </div>
     </div>
 
-    <div class="ufvc-context-menu" role="menu">
-      <button class="ufvc-context-item ufvc-context-download" role="menuitem" title="Download Video">
-        ${ICONS.download}
-        <span>Download Video</span>
-      </button>
-    </div>
+    <div class="ufvc-context-menu" role="menu"></div>
   `;
 
   shadowRoot.appendChild(container);
@@ -725,8 +892,47 @@ export function createShadowUI(): ShadowUIElements {
     seekForwardBtn: container.querySelector('.ufvc-seek-forward-btn') as HTMLButtonElement,
     miniProgressBar: container.querySelector('.ufvc-mini-progress-bar') as HTMLElement,
     contextMenu: container.querySelector('.ufvc-context-menu') as HTMLElement,
-    contextDownloadBtn: container.querySelector('.ufvc-context-download') as HTMLButtonElement,
+    dragHandle: container.querySelector('.ufvc-drag-handle') as HTMLElement,
     recIndicator: container.querySelector('.ufvc-rec-indicator') as HTMLElement,
     recTime: container.querySelector('.ufvc-rec-time') as HTMLElement
   };
+}
+
+// ─── Dynamic hints (tooltips reflect the user's shortcut configuration) ──
+
+export interface ControlHintsConfig {
+  shortcuts: ShortcutsConfig;
+  seekInterval: number;
+}
+
+const withShortcut = (label: string, ...shortcuts: Array<string | undefined>): string => {
+  const keys = shortcuts.filter((s): s is string => !!s).map(formatShortcutForDisplay);
+  return keys.length ? `${label} (${keys.join(' / ')})` : label;
+};
+
+/**
+ * Updates button titles, aria-labels and the seek-icon numbers so they match
+ * the configured shortcuts and seek interval.
+ */
+export function updateControlHints(ui: ShadowUIElements, config: ControlHintsConfig): void {
+  const sc = config.shortcuts;
+  const secs = config.seekInterval || 5;
+
+  const setHint = (el: Element, title: string, aria?: string) => {
+    el.setAttribute('title', title);
+    if (aria) el.setAttribute('aria-label', aria);
+  };
+
+  setHint(ui.playPauseBtn, withShortcut('Play/Pause', sc.togglePlay));
+  setHint(ui.seekBackBtn, withShortcut(`Seek -${secs}s`, sc.seekBackward), `Seek backward ${secs} seconds`);
+  setHint(ui.seekForwardBtn, withShortcut(`Seek +${secs}s`, sc.seekForward), `Seek forward ${secs} seconds`);
+  setHint(ui.progressContainer, withShortcut('Seek', sc.seekBackward, sc.seekForward));
+  setHint(ui.volumeBtn, withShortcut('Mute/Unmute', sc.toggleMute));
+  setHint(ui.volumeSlider, withShortcut('Volume', sc.volumeUp, sc.volumeDown));
+  setHint(ui.fullscreenBtn, withShortcut('Toggle Fullscreen', sc.toggleFullscreen));
+
+  // The seek icons render the interval as text inside the SVG
+  const label = secs > 99 ? '99+' : String(secs);
+  ui.seekBackBtn.querySelectorAll('text').forEach((t) => (t.textContent = label));
+  ui.seekForwardBtn.querySelectorAll('text').forEach((t) => (t.textContent = label));
 }

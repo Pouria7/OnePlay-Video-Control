@@ -11,10 +11,13 @@
       <!-- Header -->
       <header class="popup-header">
         <div class="logo-area">
-          <img class="logo-icon" src="../icons/icon-128.png" />
-          <div>
-            <h1 class="extension-title">OnePlay</h1>
-            <span class="version-badge" id="versionBadge"></span>
+          <img class="logo-icon" src="../icons/icon-128.png" alt="OnePlay logo" />
+          <div class="logo-titles">
+            <div class="title-row">
+              <h1 class="extension-title">OnePlay</h1>
+              <span class="version-badge" id="versionBadge"></span>
+            </div>
+            <span class="extension-tagline">Universal Video Overlay</span>
           </div>
         </div>
         <div class="site-status" id="activeSiteBadge">Ready</div>
@@ -36,75 +39,17 @@
         </div>
       </div>
 
-      <!-- Global Controls Section -->
-      <section class="card">
-        <div class="section-title">Global Settings</div>
-
-        <div class="setting-row">
-          <div class="setting-info">
-            <span class="setting-label">Enable Extension</span>
-            <span class="setting-subtext"
-              >Toggle controls across all websites</span
-            >
-          </div>
-          <label class="toggle-switch">
-            <input type="checkbox" id="globalEnableToggle" checked />
-            <span class="toggle-slider"></span>
-          </label>
-        </div>
-
-        <div class="setting-row">
-          <div class="setting-info">
-            <span class="setting-label">Default Theme</span>
-            <span class="setting-subtext">Base styling for video controls</span>
-          </div>
-          <select id="globalThemeSelect" class="custom-select">
-            <option value="classic-dark">Classic Dark (Default)</option>
-            <option value="midnight">Midnight OLED</option>
-            <option value="glass">Glassmorphism</option>
-            <option value="ocean-blue">Ocean Blue</option>
-          </select>
-        </div>
-
-        <div class="setting-row">
-          <div class="setting-info">
-            <span class="setting-label">Controller Position</span>
-            <span class="setting-subtext">Dock location relative to video</span>
-          </div>
-          <select id="globalPositionSelect" class="custom-select">
-            <option value="bottom-inside">Bottom (Inside Video)</option>
-            <option value="bottom-outside">Bottom (Outside Video)</option>
-            <option value="top-inside">Top (Inside Video)</option>
-            <option value="top-outside">Top (Outside Video)</option>
-          </select>
-        </div>
-
-        <div class="setting-row">
-          <div class="setting-info">
-            <span class="setting-label">Controls Layout</span>
-            <span class="setting-subtext">Density and button selection</span>
-          </div>
-          <select id="globalLayoutSelect" class="custom-select">
-            <option value="full">Full Controls (All playback tools)</option>
-            <option value="minimal">
-              Minimal (Compact Pill: Seek & Progress)
-            </option>
-          </select>
-        </div>
-      </section>
-
       <!-- Current Site Section -->
       <section class="card" id="siteSection">
         <div class="section-title">
-          Current Site (<span id="siteDomainName">...</span>)
+          <span>Current Site</span>
+          <span class="domain-pill" id="siteDomainName">...</span>
         </div>
 
         <div class="setting-row">
           <div class="setting-info">
             <span class="setting-label">Enable on this site</span>
-            <span class="setting-subtext" id="siteAdapterName"
-              >Adapter: Generic</span
-            >
+            <span class="setting-subtext" id="siteAdapterName">Adapter: Generic</span>
           </div>
           <label class="toggle-switch">
             <input type="checkbox" id="siteEnableToggle" checked />
@@ -115,7 +60,7 @@
         <div class="setting-row">
           <div class="setting-info">
             <span class="setting-label">Site Theme Override</span>
-            <span class="setting-subtext">Override theme for this domain</span>
+            <span class="setting-subtext">Custom theme for this domain</span>
           </div>
           <select id="siteThemeSelect" class="custom-select">
             <option value="">(Inherit Global)</option>
@@ -129,14 +74,14 @@
         <div class="setting-row">
           <div class="setting-info">
             <span class="setting-label">Site Position Override</span>
-            <span class="setting-subtext">Position for this domain</span>
+            <span class="setting-subtext">Dock location for this domain</span>
           </div>
           <select id="sitePositionSelect" class="custom-select">
             <option value="">(Inherit Global)</option>
-            <option value="bottom-inside">Bottom (Inside Video)</option>
-            <option value="bottom-outside">Bottom (Outside Video)</option>
-            <option value="top-inside">Top (Inside Video)</option>
-            <option value="top-outside">Top (Outside Video)</option>
+            <option value="bottom-inside">Bottom (Inside)</option>
+            <option value="bottom-outside">Bottom (Outside)</option>
+            <option value="top-inside">Top (Inside)</option>
+            <option value="top-outside">Top (Outside)</option>
           </select>
         </div>
 
@@ -148,18 +93,83 @@
           <select id="siteLayoutSelect" class="custom-select">
             <option value="">(Inherit Global)</option>
             <option value="full">Full Controls</option>
-            <option value="minimal">Minimal Controls</option>
+            <option value="minimal">Minimal (Pill)</option>
           </select>
         </div>
 
         <div class="video-counter-bar">
-          <span>Active Videos:</span>
+          <span>Active Videos</span>
           <span class="counter-badge" id="activeVideoCount">0</span>
         </div>
       </section>
 
+      <!-- Global Controls Accordion (collapsed by default) -->
+      <details class="card accordion-card" id="globalAccordion">
+        <summary class="accordion-summary">
+          <div class="accordion-title-wrap">
+            <span class="section-title">Global Settings</span>
+            <span class="accordion-subtext">Defaults across all websites</span>
+          </div>
+          <span class="accordion-chevron" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+              <path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z"/>
+            </svg>
+          </span>
+        </summary>
+
+        <div class="accordion-content">
+          <div class="setting-row">
+            <div class="setting-info">
+              <span class="setting-label">Enable Extension</span>
+              <span class="setting-subtext">Master toggle for floating controls</span>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" id="globalEnableToggle" checked />
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+
+          <div class="setting-row">
+            <div class="setting-info">
+              <span class="setting-label">Default Theme</span>
+              <span class="setting-subtext">Base styling for video controls</span>
+            </div>
+            <select id="globalThemeSelect" class="custom-select">
+              <option value="classic-dark">Classic Dark (Default)</option>
+              <option value="midnight">Midnight OLED</option>
+              <option value="glass">Glassmorphism</option>
+              <option value="ocean-blue">Ocean Blue</option>
+            </select>
+          </div>
+
+          <div class="setting-row">
+            <div class="setting-info">
+              <span class="setting-label">Controller Position</span>
+              <span class="setting-subtext">Dock location relative to video</span>
+            </div>
+            <select id="globalPositionSelect" class="custom-select">
+              <option value="bottom-inside">Bottom (Inside Video)</option>
+              <option value="bottom-outside">Bottom (Outside Video)</option>
+              <option value="top-inside">Top (Inside Video)</option>
+              <option value="top-outside">Top (Outside Video)</option>
+            </select>
+          </div>
+
+          <div class="setting-row">
+            <div class="setting-info">
+              <span class="setting-label">Controls Layout</span>
+              <span class="setting-subtext">Density and button selection</span>
+            </div>
+            <select id="globalLayoutSelect" class="custom-select">
+              <option value="full">Full Controls (All playback tools)</option>
+              <option value="minimal">Minimal (Compact Pill: Seek & Progress)</option>
+            </select>
+          </div>
+        </div>
+      </details>
+
       <!-- Shortcut Cheatsheet -->
-      <section class="card">
+      <section class="card shortcuts-card">
         <div class="section-title">Keyboard Shortcuts</div>
         <div class="shortcut-list">
           <div class="shortcut-item">
@@ -167,7 +177,7 @@
             <kbd id="popScPlay">Space</kbd>
           </div>
           <div class="shortcut-item">
-            <span>Seek -5s / +5s</span>
+            <span>Seek Backward / Forward</span>
             <div id="popScSeek"><kbd>←</kbd> <kbd>→</kbd></div>
           </div>
           <div class="shortcut-item">
@@ -188,7 +198,7 @@
             d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"
           />
         </svg>
-        Open Full Settings & Theme Builder
+        <span>Open Full Settings & Theme Builder</span>
       </button>
     </div>
 

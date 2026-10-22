@@ -2,18 +2,22 @@
  * Video Controller Instance
  *
  * Coordinates UI interactions, video playback synchronization,
- * drag-to-seek, auto-hide timer, and theme styling for a single target video.
+ * drag-to-seek, auto-hide timer, theme styling, manual controller dragging,
+ * and context-menu actions for a single target video.
  *
  * Heavy lifting for download/recording is delegated to RecordingManager.
+ * Volume state management (preventing YouTube preview muting overrides)
+ * is delegated to VolumeState.
  */
 
-import { createShadowUI, ShadowUIElements, ICONS } from './shadow-ui';
+import { createShadowUI, ShadowUIElements, updateControlHints } from './shadow-ui';
 import { PositionManager } from './position-manager';
+import { VolumeState } from './volume-state';
+import { ContextMenu } from './context-menu';
 import { ResolvedConfig } from '../../storage/types';
 import { themeEngine } from '../../themes/theme-engine';
 import { formatTime } from '../../utils/dom';
 import { RecordingManager } from './recording-manager';
-import { isDownloadRestricted } from '../../utils/download-policy';
 
 /** CSS state classes toggled on shadow-UI elements. */
 const CLASS = {
@@ -24,6 +28,7 @@ const CLASS = {
   MINIMAL_MODE: 'minimal-mode',
   SPEED_ITEM: 'ufvc-speed-item',
   POPUPS_DOWN: 'popups-down',
+  IS_DRAGGING: 'is-dragging',
 } as const;
 
 /** Selectors derived from the class names above. */
@@ -42,9 +47,12 @@ export class VideoController {
 
   private ui: ShadowUIElements;
   private positionManager: PositionManager;
+  private volumeState: VolumeState;
+  private contextMenu: ContextMenu;
   private config: ResolvedConfig;
   private isDestroyed = false;
   private isDraggingScrub = false;
+  private isDraggingBar = false;
   private autoHideTimeout: ReturnType<typeof setTimeout> | null = null;
   private cleanupFns: Array<() => void> = [];
   private recording: RecordingManager;
@@ -67,6 +75,7 @@ export class VideoController {
     (document.documentElement || document.body).appendChild(this.ui.host);
 
     this.positionManager = new PositionManager(video, this.ui.host, this.ui.container, this.config);
+    this.volumeState = new VolumeState(video);
 
     this.recording = new RecordingManager(video, {
       onRecordingStart: () => this.handleRecordingStart(),
@@ -75,8 +84,26 @@ export class VideoController {
       onFeedback: (msg) => this.showDownloadFeedback(msg),
     });
 
+    this.contextMenu = new ContextMenu({
+      element: this.ui.contextMenu,
+      anchor: this.ui.container,
+      context: {
+        video: this.video,
+        volume: this.volumeState,
+        recording: this.recording,
+        getConfig: () => this.config,
+      },
+      onOpenChange: (isOpen) => {
+        if (isOpen) {
+          this.closeSpeedMenu();
+          this.resetAutoHideTimer();
+        }
+      },
+    });
+
     this.bindVideoEvents();
     this.bindUIEvents();
+    this.bindBarDragEvents();
     this.syncInitialState();
     this.resetAutoHideTimer();
   }
@@ -90,22 +117,32 @@ export class VideoController {
     this.config = newConfig;
     this.applyTheme(newConfig.theme);
     this.setMinimalMode(newConfig.controlsLayout === 'minimal');
+    updateControlHints(this.ui, {
+      shortcuts: newConfig.shortcuts,
+      seekInterval: newConfig.seekInterval,
+    });
     this.positionManager.updateConfig(newConfig);
+    this.contextMenu.refresh();
   }
 
   reposition(): void {
     this.positionManager.updatePosition();
   }
 
+  getVolumeState(): VolumeState {
+    return this.volumeState;
+  }
+
+  getContextMenu(): ContextMenu {
+    return this.contextMenu;
+  }
+
   private syncInitialState(): void {
     this.setMinimalMode(this.config.controlsLayout === 'minimal');
-    // TODO: When additional context menu items are added in the future, do not hide the entire
-    // context menu. Instead, conditionally render/hide only the download item (ui.contextDownloadBtn)
-    // while keeping other context menu options visible and functional on restricted domains.
-    if (isDownloadRestricted()) {
-      this.ui.contextMenu.style.display = 'none';
-      this.ui.contextDownloadBtn.disabled = true;
-    }
+    updateControlHints(this.ui, {
+      shortcuts: this.config.shortcuts,
+      seekInterval: this.config.seekInterval,
+    });
     this.updatePlayState();
     this.updateTimeDisplay();
     this.updateVolumeUI();
@@ -138,10 +175,6 @@ export class VideoController {
     return this.ui.speedMenu.classList.contains(CLASS.OPEN);
   }
 
-  private openSpeedMenu(): void {
-    this.ui.speedMenu.classList.add(CLASS.OPEN);
-  }
-
   private closeSpeedMenu(): void {
     this.ui.speedMenu.classList.remove(CLASS.OPEN);
   }
@@ -150,31 +183,19 @@ export class VideoController {
     if (!this.isSpeedMenuOpen()) {
       const barRect = this.ui.container.getBoundingClientRect();
       this.ui.container.classList.toggle(CLASS.POPUPS_DOWN, barRect.top < 250);
+      this.contextMenu.close();
     }
     this.ui.speedMenu.classList.toggle(CLASS.OPEN);
   }
 
-  // Context menu
-  private isContextMenuOpen(): boolean {
-    return this.ui.contextMenu.classList.contains(CLASS.OPEN);
-  }
-
-  private openContextMenu(): void {
-    this.ui.contextMenu.classList.add(CLASS.OPEN);
-  }
-
-  private closeContextMenu(): void {
-    this.ui.contextMenu.classList.remove(CLASS.OPEN);
-  }
-
   // Both menus
   private isAnyMenuOpen(): boolean {
-    return this.isSpeedMenuOpen() || this.isContextMenuOpen();
+    return this.isSpeedMenuOpen() || this.contextMenu.isOpen;
   }
 
   private closeAllMenus(): void {
     this.closeSpeedMenu();
-    this.closeContextMenu();
+    this.contextMenu.close();
   }
 
   // Speed items
@@ -192,13 +213,12 @@ export class VideoController {
     const onPlayPause = () => {
       this.updatePlayState();
       this.resetAutoHideTimer();
-    }
+    };
     const onTimeUpdate = () => {
       if (!this.isDraggingScrub) this.updateTimeDisplay();
     };
-    // Fires for any volume/mute change (slider, mute button, toggleMute(),
-    // or the page itself), so the controls reappear and the idle timer restarts.
     const onVolumeChange = () => {
+      this.volumeState.handleMediaVolumeChange();
       this.updateVolumeUI();
       this.resetAutoHideTimer();
     };
@@ -208,17 +228,22 @@ export class VideoController {
     this.video.addEventListener('play', onPlayPause);
     this.video.addEventListener('pause', onPlayPause);
     this.video.addEventListener('timeupdate', onTimeUpdate);
-    this.video.addEventListener('volumechange', onVolumeChange);
+    this.video.addEventListener('volumechange', onVolumeChange, true);
     this.video.addEventListener('progress', onProgress);
     this.video.addEventListener('ratechange', onRateChange);
+
+    const unsubscribeVolume = this.volumeState.subscribe(() => {
+      this.updateVolumeUI();
+    });
 
     this.cleanupFns.push(() => {
       this.video.removeEventListener('play', onPlayPause);
       this.video.removeEventListener('pause', onPlayPause);
       this.video.removeEventListener('timeupdate', onTimeUpdate);
-      this.video.removeEventListener('volumechange', onVolumeChange);
+      this.video.removeEventListener('volumechange', onVolumeChange, true);
       this.video.removeEventListener('progress', onProgress);
       this.video.removeEventListener('ratechange', onRateChange);
+      unsubscribeVolume();
     });
   }
 
@@ -282,7 +307,7 @@ export class VideoController {
       e.stopPropagation();
       const barRect = this.ui.container.getBoundingClientRect();
       this.ui.container.classList.toggle(CLASS.POPUPS_DOWN, barRect.top < 250);
-      this.toggleMute();
+      this.volumeState.toggleMute();
     };
     this.ui.volumeBtn.addEventListener('click', handleVolumeBtnClick);
     this.cleanupFns.push(() =>
@@ -292,8 +317,7 @@ export class VideoController {
     const handleVolumeInput = (e: Event) => {
       e.stopPropagation();
       const val = parseFloat(this.ui.volumeSlider.value);
-      this.video.volume = val;
-      this.video.muted = val === 0;
+      this.volumeState.setVolume(val);
     };
     this.ui.volumeSlider.addEventListener('input', handleVolumeInput);
     this.cleanupFns.push(() =>
@@ -388,43 +412,25 @@ export class VideoController {
     this.cleanupFns.push(() => document.removeEventListener('click', handleDocumentClick));
 
     const handleContainerClick = () => {
-      this.closeContextMenu();
+      this.contextMenu.close();
     };
     this.ui.container.addEventListener('click', handleContainerClick);
     this.cleanupFns.push(() => this.ui.container.removeEventListener('click', handleContainerClick));
 
-    // Context menu (only on non-restricted domains for now because download is the sole item)
-    // TODO: Allow context menu to open on restricted domains if other non-download items are present.
+    // Context menu opening
     const handleContextMenu = (e: MouseEvent) => {
-      if (isDownloadRestricted()) {
-        return;
+      if (this.contextMenu.hasVisibleItems()) {
+        e.preventDefault();
+        e.stopPropagation();
+        this.contextMenu.openAt(e.clientX, e.clientY);
       }
-      e.preventDefault();
-      e.stopPropagation();
-      this.showContextMenu(e);
     };
     this.ui.container.addEventListener('contextmenu', handleContextMenu);
     this.cleanupFns.push(() => this.ui.container.removeEventListener('contextmenu', handleContextMenu));
 
-    // Download button
-    const handleDownloadClick = (e: MouseEvent) => {
-      e.stopPropagation();
-      e.preventDefault();
-      this.closeContextMenu();
-      if (isDownloadRestricted()) {
-        this.showDownloadFeedback('⚠️ Not available on this site');
-        return;
-      }
-      void this.recording.download();
-    };
-    this.ui.contextDownloadBtn.addEventListener('click', handleDownloadClick);
-    this.cleanupFns.push(() =>
-      this.ui.contextDownloadBtn.removeEventListener('click', handleDownloadClick)
-    );
-
     const handleWindowContextMenu = (e: MouseEvent) => {
       if (!this.ui.host.contains(e.target as Node)) {
-        this.closeContextMenu();
+        this.contextMenu.close();
       }
     };
     window.addEventListener('contextmenu', handleWindowContextMenu);
@@ -482,6 +488,73 @@ export class VideoController {
     });
   }
 
+  // ─── Manual Bar Dragging ──────────────────────────────────────────────
+
+  private bindBarDragEvents(): void {
+    const startDrag = (startX: number, startY: number) => {
+      this.isDraggingBar = true;
+      this.ui.container.classList.add(CLASS.IS_DRAGGING);
+      this.closeAllMenus();
+      this.resetAutoHideTimer();
+
+      const initialOffset = this.positionManager.getEffectiveOffset();
+
+      const onPointerMove = (e: PointerEvent) => {
+        const dx = initialOffset.dx + (e.clientX - startX);
+        const dy = initialOffset.dy + (e.clientY - startY);
+        this.positionManager.setDragOffset({ dx, dy });
+        this.resetAutoHideTimer();
+      };
+
+      const onPointerUp = () => {
+        this.isDraggingBar = false;
+        this.ui.container.classList.remove(CLASS.IS_DRAGGING);
+        window.removeEventListener('pointermove', onPointerMove);
+        window.removeEventListener('pointerup', onPointerUp);
+        window.removeEventListener('pointercancel', onPointerUp);
+        this.resetAutoHideTimer();
+      };
+
+      window.addEventListener('pointermove', onPointerMove);
+      window.addEventListener('pointerup', onPointerUp);
+      window.addEventListener('pointercancel', onPointerUp);
+    };
+
+    // Dedicated drag handle (full mode)
+    const onHandlePointerDown = (e: PointerEvent) => {
+      if (e.button !== 0) return;
+      e.stopPropagation();
+      e.preventDefault();
+      startDrag(e.clientX, e.clientY);
+    };
+    this.ui.dragHandle.addEventListener('pointerdown', onHandlePointerDown);
+
+    // Double-click to reset position back to dock
+    const onHandleDblClick = (e: MouseEvent) => {
+      e.stopPropagation();
+      this.positionManager.resetDragOffset();
+    };
+    this.ui.dragHandle.addEventListener('dblclick', onHandleDblClick);
+
+    // Minimal mode: the entire pill bar is draggable (excluding interactive buttons)
+    const onContainerPointerDown = (e: PointerEvent) => {
+      if (e.button !== 0) return;
+      if (this.config.controlsLayout !== 'minimal') return;
+      const target = e.target as HTMLElement;
+      if (target.closest('button, input, [role="menu"], [role="menuitem"]')) return;
+      e.stopPropagation();
+      e.preventDefault();
+      startDrag(e.clientX, e.clientY);
+    };
+    this.ui.container.addEventListener('pointerdown', onContainerPointerDown);
+
+    this.cleanupFns.push(() => {
+      this.ui.dragHandle.removeEventListener('pointerdown', onHandlePointerDown);
+      this.ui.dragHandle.removeEventListener('dblclick', onHandleDblClick);
+      this.ui.container.removeEventListener('pointerdown', onContainerPointerDown);
+    });
+  }
+
   // ─── UI state updates ─────────────────────────────────────────────────
 
   private updatePlayState(): void {
@@ -526,15 +599,16 @@ export class VideoController {
   }
 
   private updateVolumeUI(): void {
-    const isMuted = this.video.muted || this.video.volume === 0;
-    this.ui.volumeSlider.value = isMuted ? '0' : String(this.video.volume);
+    const isMuted = this.volumeState.isSilent;
+    const vol = isMuted ? 0 : this.volumeState.volume;
+    this.ui.volumeSlider.value = String(vol);
 
     this.ui.volumeHighIcon.style.display = 'none';
     this.ui.volumeLowIcon.style.display = 'none';
     this.ui.volumeMuteIcon.style.display = 'none';
 
     if (isMuted) this.ui.volumeMuteIcon.style.display = 'inline-block';
-    else if (this.video.volume < 0.5) this.ui.volumeLowIcon.style.display = 'inline-block';
+    else if (vol < 0.5) this.ui.volumeLowIcon.style.display = 'inline-block';
     else this.ui.volumeHighIcon.style.display = 'inline-block';
   }
 
@@ -557,43 +631,17 @@ export class VideoController {
       this.video.paused ||
       this.video.ended ||
       this.isDraggingScrub ||
+      this.isDraggingBar ||
       this.isAnyMenuOpen()
     ) {
       return;
     }
 
     this.autoHideTimeout = setTimeout(() => {
-      if (!this.video.paused && !this.isDraggingScrub && !this.isDestroyed) {
+      if (!this.video.paused && !this.isDraggingScrub && !this.isDraggingBar && !this.isDestroyed) {
         this.hideControls();
       }
     }, this.config.autoHideDelay);
-  }
-
-  private showContextMenu(e: MouseEvent): void {
-    if (isDownloadRestricted()) {
-      return;
-    }
-    this.closeSpeedMenu();
-    this.resetAutoHideTimer();
-
-    const barRect = this.ui.container.getBoundingClientRect();
-    const relX = e.clientX - barRect.left;
-    const relY = e.clientY - barRect.top;
-    const menuWidth = 145;
-
-    const maxLeft = Math.max(0, barRect.width - menuWidth);
-    const clampedLeft = Math.max(0, Math.min(relX - 10, maxLeft));
-    this.ui.contextMenu.style.left = `${clampedLeft}px`;
-
-    if (barRect.top < 65) {
-      this.ui.contextMenu.style.top = `${relY + 4}px`;
-      this.ui.contextMenu.style.bottom = 'auto';
-    } else {
-      this.ui.contextMenu.style.bottom = `${barRect.height - relY + 4}px`;
-      this.ui.contextMenu.style.top = 'auto';
-    }
-
-    this.openContextMenu();
   }
 
   // ─── Recording UI bridge ──────────────────────────────────────────────
@@ -601,38 +649,21 @@ export class VideoController {
   private handleRecordingStart(): void {
     this.ui.recIndicator.style.display = 'inline-flex';
     this.ui.recTime.textContent = '0:00';
-    this.updateDownloadBtnRecording(true, 0);
+    this.contextMenu.dispatch({ type: 'recording', isRecording: true, seconds: 0 });
   }
 
   private handleRecordingTick(seconds: number): void {
     this.ui.recTime.textContent = formatTime(seconds);
-    this.updateDownloadBtnRecording(true, seconds);
+    this.contextMenu.dispatch({ type: 'recording', isRecording: true, seconds });
   }
 
   private handleRecordingEnd(): void {
     this.ui.recIndicator.style.display = 'none';
-    this.updateDownloadBtnRecording(false, 0);
-  }
-
-  private updateDownloadBtnRecording(isRec: boolean, seconds: number): void {
-    if (isRec) {
-      this.ui.contextDownloadBtn.innerHTML = `
-        <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><rect x="6" y="6" width="12" height="12" rx="2" fill="#ef4444"/></svg>
-        <span>Stop & Save (${formatTime(seconds)})</span>
-      `;
-    } else {
-      this.ui.contextDownloadBtn.innerHTML = `
-        ${ICONS.download}
-        <span>Download Video</span>
-      `;
-    }
+    this.contextMenu.dispatch({ type: 'recording', isRecording: false, seconds: 0 });
   }
 
   private showDownloadFeedback(message: string): void {
-    this.ui.contextDownloadBtn.innerHTML = `<span>${message}</span>`;
-    setTimeout(() => {
-      this.updateDownloadBtnRecording(this.recording.isRecording, this.recording.seconds);
-    }, 2500);
+    this.contextMenu.dispatch({ type: 'feedback', message, durationMs: 2500 });
   }
 
   // ─── Lifecycle ────────────────────────────────────────────────────────
@@ -642,6 +673,7 @@ export class VideoController {
     this.isDestroyed = true;
 
     this.recording.destroy();
+    this.contextMenu.destroy();
 
     if (this.autoHideTimeout) {
       clearTimeout(this.autoHideTimeout);
@@ -665,9 +697,6 @@ export class VideoController {
   }
 
   toggleMute(): void {
-    this.video.muted = !this.video.muted;
-    if (!this.video.muted && this.video.volume === 0) {
-      this.video.volume = 0.5;
-    }
+    this.volumeState.toggleMute();
   }
 }

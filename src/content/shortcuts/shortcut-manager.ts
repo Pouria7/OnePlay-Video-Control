@@ -95,17 +95,25 @@ export class ShortcutManager {
         const dur = isFinite(video.duration) ? video.duration : Infinity;
         video.currentTime = Math.min(dur, video.currentTime + seekSecs);
       } else if (isVolUp) {
-        video.volume = Math.min(1, Math.round((video.volume + 0.1) * 10) / 10);
-        video.muted = false;
+        if (targetController.getVolumeState) {
+          targetController.getVolumeState().adjustVolume(0.1);
+        } else {
+          video.volume = Math.min(1, Math.round((video.volume + 0.1) * 10) / 10);
+          video.muted = false;
+        }
       } else if (isVolDown) {
-        video.volume = Math.max(0, Math.round((video.volume - 0.1) * 10) / 10);
-        if (video.volume === 0) {
-          video.muted = true;
+        if (targetController.getVolumeState) {
+          targetController.getVolumeState().adjustVolume(-0.1);
+        } else {
+          video.volume = Math.max(0, Math.round((video.volume - 0.1) * 10) / 10);
+          if (video.volume === 0) video.muted = true;
         }
       } else if (isMute) {
-        video.muted = !video.muted;
-        if (!video.muted && video.volume === 0) {
-          video.volume = 0.5;
+        if (targetController.getVolumeState) {
+          targetController.getVolumeState().toggleMute();
+        } else {
+          video.muted = !video.muted;
+          if (!video.muted && video.volume === 0) video.volume = 0.5;
         }
       } else if (isFullscreen) {
         if (!document.fullscreenElement) {
