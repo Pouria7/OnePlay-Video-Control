@@ -10,13 +10,11 @@ const distDir = path.resolve(rootDir, 'dist');
 async function runBuild() {
   console.log('🚀 Starting OnePlay - Video Control extension build...');
 
-  // Clean dist directory
   if (fs.existsSync(distDir)) {
     fs.rmSync(distDir, { recursive: true, force: true });
   }
   fs.mkdirSync(distDir, { recursive: true });
 
-  // 1. Build Popup (HTML entry with relative base './')
   console.log('📦 Building popup...');
   await build({
     configFile: false,
@@ -39,7 +37,6 @@ async function runBuild() {
     }
   });
 
-  // Move popup.html if nested in src/popup
   const nestedPopupHtml = path.resolve(distDir, 'popup/src/popup/popup.html');
   const targetPopupHtml = path.resolve(distDir, 'popup/popup.html');
   if (fs.existsSync(nestedPopupHtml) && !fs.existsSync(targetPopupHtml)) {
@@ -47,7 +44,6 @@ async function runBuild() {
     fs.rmSync(path.resolve(distDir, 'popup/src'), { recursive: true, force: true });
   }
 
-  // 2. Build Options Page (HTML entry with relative base './')
   console.log('📦 Building options dashboard...');
   await build({
     configFile: false,
@@ -70,7 +66,6 @@ async function runBuild() {
     }
   });
 
-  // Move options.html if nested in src/options
   const nestedOptionsHtml = path.resolve(distDir, 'options/src/options/options.html');
   const targetOptionsHtml = path.resolve(distDir, 'options/options.html');
   if (fs.existsSync(nestedOptionsHtml) && !fs.existsSync(targetOptionsHtml)) {
@@ -78,7 +73,6 @@ async function runBuild() {
     fs.rmSync(path.resolve(distDir, 'options/src'), { recursive: true, force: true });
   }
 
-  // 3. Build Content Script (IIFE - completely self-contained, no external chunk imports)
   console.log('📦 Building content script...');
   await build({
     configFile: false,
@@ -97,7 +91,6 @@ async function runBuild() {
     }
   });
 
-  // 4. Build Background Service Worker (ES format)
   console.log('📦 Building background service worker...');
   await build({
     configFile: false,
@@ -115,26 +108,31 @@ async function runBuild() {
     }
   });
 
-  // 5. Copy manifest and icons to dist/
   console.log('📋 Copying manifest.json and icons to dist...');
-  // Prefer root manifest.json if exists, sync version with package.json
-  const manifestSrcPath = fs.existsSync(path.resolve(rootDir, 'manifest.json'))
-    ? path.resolve(rootDir, 'manifest.json')
-    : path.resolve(rootDir, 'public/manifest.json');
+
+  const rootManifestPath = path.resolve(rootDir, 'manifest.json');
+  const publicManifestPath = path.resolve(rootDir, 'public/manifest.json');
+
+  if (!fs.existsSync(rootManifestPath) && fs.existsSync(publicManifestPath)) {
+    fs.copyFileSync(publicManifestPath, rootManifestPath);
+  }
+
+  if (!fs.existsSync(rootManifestPath)) {
+    throw new Error('manifest.json not found in project root!');
+  }
 
   const pkgJson = JSON.parse(fs.readFileSync(path.resolve(rootDir, 'package.json'), 'utf8'));
-  const manifestContent = JSON.parse(fs.readFileSync(manifestSrcPath, 'utf8'));
+  const manifestContent = JSON.parse(fs.readFileSync(rootManifestPath, 'utf8'));
   manifestContent.version = pkgJson.version || manifestContent.version;
 
-  fs.writeFileSync(path.resolve(distDir, 'manifest.json'), JSON.stringify(manifestContent, null, 2));
+  const serializedManifest = JSON.stringify(manifestContent, null, 2);
 
-  // Also sync public/manifest.json and root manifest.json so they never diverge
-  if (fs.existsSync(path.resolve(rootDir, 'public/manifest.json'))) {
-    fs.writeFileSync(path.resolve(rootDir, 'public/manifest.json'), JSON.stringify(manifestContent, null, 2));
-  }
-  if (fs.existsSync(path.resolve(rootDir, 'manifest.json'))) {
-    fs.writeFileSync(path.resolve(rootDir, 'manifest.json'), JSON.stringify(manifestContent, null, 2));
-  }
+  fs.writeFileSync(path.resolve(distDir, 'manifest.json'), serializedManifest);
+
+  fs.mkdirSync(path.dirname(publicManifestPath), { recursive: true });
+  fs.writeFileSync(publicManifestPath, serializedManifest);
+
+  fs.writeFileSync(rootManifestPath, serializedManifest);
 
   const iconsDistDir = path.resolve(distDir, 'icons');
   if (!fs.existsSync(iconsDistDir)) {
