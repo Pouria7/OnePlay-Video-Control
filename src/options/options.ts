@@ -211,7 +211,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         <option value="minimal" ${cfg.controlsLayout === 'minimal' ? 'selected' : ''}>Minimal</option>
       `;
 
-      const isEnabled = cfg.enabled !== undefined ? cfg.enabled : true;
+      const defaultSiteEnabled = storageData.globalSettings.defaultSitePolicy === 'selective' ? false : true;
+      const isEnabled = cfg.enabled !== undefined ? cfg.enabled : defaultSiteEnabled;
 
       tr.innerHTML = `
         <td><span class="domain-badge">${domain}</span></td>

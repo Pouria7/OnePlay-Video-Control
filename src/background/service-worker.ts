@@ -8,7 +8,25 @@
 import { DEFAULT_GLOBAL_SETTINGS } from '../storage/types';
 import { isDownloadRestricted } from '../utils/download-policy';
 
+const UNINSTALL_URL = 'https://anaspect-oneplay.pages.dev/uninstall.html';
+
+// Set uninstall feedback survey URL
+function registerUninstallSurvey(): void {
+  if (typeof chrome !== 'undefined' && chrome.runtime?.setUninstallURL) {
+    try {
+      const v = chrome.runtime.getManifest()?.version || '';
+      chrome.runtime.setUninstallURL(`${UNINSTALL_URL}?v=${encodeURIComponent(v)}`);
+    } catch (err) {
+      console.warn('[UFVC Background] Failed to set uninstall URL:', err);
+    }
+  }
+}
+
+registerUninstallSurvey();
+
 chrome.runtime.onInstalled.addListener(async (details) => {
+  registerUninstallSurvey();
+
   if (details.reason === 'install') {
     // Initialize default storage schema
     const existing = await chrome.storage.sync.get(['globalSettings', 'siteSettings', 'customThemes']);

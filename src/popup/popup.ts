@@ -126,7 +126,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   globalPositionSelect.value = globalSettings.controllerPosition || 'bottom-inside';
   globalLayoutSelect.value = globalSettings.controlsLayout || 'full';
 
-  siteEnableToggle.checked = siteSettings.enabled !== undefined ? siteSettings.enabled : true;
+  const isSelectivePolicy = globalSettings.defaultSitePolicy === 'selective';
+  const defaultSiteEnabled = isSelectivePolicy ? false : true;
+  siteEnableToggle.checked = siteSettings.enabled !== undefined ? siteSettings.enabled : defaultSiteEnabled;
   siteThemeSelect.value = siteSettings.theme || '';
   sitePositionSelect.value = siteSettings.controllerPosition || '';
   siteLayoutSelect.value = siteSettings.controlsLayout || '';
@@ -154,7 +156,16 @@ document.addEventListener('DOMContentLoaded', async () => {
           return;
         }
 
-        activeSiteBadge.textContent = 'Active';
+        if (response.config && !response.config.enabled) {
+          activeSiteBadge.textContent = 'Disabled';
+          activeSiteBadge.style.color = '#9ca3af';
+          activeSiteBadge.style.borderColor = '#374151';
+        } else {
+          activeSiteBadge.textContent = 'Active';
+          activeSiteBadge.style.color = '';
+          activeSiteBadge.style.borderColor = '';
+        }
+
         if (response.adapterName) {
           siteAdapterName.textContent = `Adapter: ${response.adapterName}`;
         }

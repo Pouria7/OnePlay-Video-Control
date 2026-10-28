@@ -134,6 +134,17 @@ async function runBuild() {
 
   fs.writeFileSync(rootManifestPath, serializedManifest);
 
+  // Sync latest version in public/uninstall.html
+  const uninstallHtmlPath = path.resolve(rootDir, 'public/uninstall.html');
+  if (fs.existsSync(uninstallHtmlPath) && pkgJson.version) {
+    let uninstallContent = fs.readFileSync(uninstallHtmlPath, 'utf8');
+    uninstallContent = uninstallContent.replace(
+      /const latestVersion = ['"][^'"]+['"];/,
+      `const latestVersion = '${pkgJson.version}';`
+    );
+    fs.writeFileSync(uninstallHtmlPath, uninstallContent);
+  }
+
   const iconsDistDir = path.resolve(distDir, 'icons');
   if (!fs.existsSync(iconsDistDir)) {
     fs.mkdirSync(iconsDistDir, { recursive: true });

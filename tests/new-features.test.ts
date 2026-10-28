@@ -170,3 +170,58 @@ describe('ContextMenu Registry & Extensibility', () => {
     expect(stepSpeed(0.5, -1)).toBe(0.5);
   });
 });
+
+describe('Idle state & Seeking wakeup', () => {
+  it('exits idle state when video fires seeking event', async () => {
+    const { VideoController } = await import('../src/content/controller/video-controller');
+    const { DEFAULT_GLOBAL_SETTINGS } = await import('../src/storage/types');
+
+    const video = document.createElement('video');
+    document.body.appendChild(video);
+
+    const controller = new VideoController('test-seek-idle', video, {
+      ...DEFAULT_GLOBAL_SETTINGS,
+      theme: 'classic-dark',
+      controllerPosition: 'bottom-inside',
+      controlsLayout: 'full'
+    });
+
+    const bar = controller.ui.container;
+
+    // Simulate idle state
+    bar.classList.add('idle');
+    expect(bar.classList.contains('idle')).toBe(true);
+
+    // Fire seeking event on video element
+    video.dispatchEvent(new Event('seeking'));
+
+    // Controller should remove idle class immediately
+    expect(bar.classList.contains('idle')).toBe(false);
+
+    controller.destroy();
+    video.remove();
+  });
+});
+
+describe('Selective policy defaults', () => {
+  it('determines correct default site toggle state based on policy', () => {
+    const getInitialSiteToggleState = (
+      siteSettings: { enabled?: boolean },
+      policy: 'universal' | 'selective'
+    ) => {
+      const isSelective = policy === 'selective';
+      const defaultSiteEnabled = isSelective ? false : true;
+      return siteSettings.enabled !== undefined ? siteSettings.enabled : defaultSiteEnabled;
+    };
+
+    // On unconfigured site under selective policy, should default to false
+    expect(getInitialSiteToggleState({}, 'selective')).toBe(false);
+
+    // On unconfigured site under universal policy, should default to true
+    expect(getInitialSiteToggleState({}, 'universal')).toBe(true);
+
+    // Explicit site setting always overrides policy default
+    expect(getInitialSiteToggleState({ enabled: true }, 'selective')).toBe(true);
+    expect(getInitialSiteToggleState({ enabled: false }, 'universal')).toBe(false);
+  });
+});

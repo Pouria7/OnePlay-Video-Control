@@ -152,12 +152,12 @@ export class VideoController {
   // ─── UI state helpers (CSS class toggles) ─────────────────────────────
 
   /** Show the controls bar (removes the idle state). */
-  private showControls(): void {
+  showControls(): void {
     this.ui.container.classList.remove(CLASS.IDLE);
   }
 
   /** Hide the controls bar (adds the idle state). */
-  private hideControls(): void {
+  hideControls(): void {
     this.ui.container.classList.add(CLASS.IDLE);
   }
 
@@ -222,6 +222,15 @@ export class VideoController {
       this.updateVolumeUI();
       this.resetAutoHideTimer();
     };
+    const onSeeking = () => {
+      this.showControls();
+      this.updateTimeDisplay();
+      this.resetAutoHideTimer();
+    };
+    const onSeeked = () => {
+      this.updateTimeDisplay();
+      this.resetAutoHideTimer();
+    };
     const onProgress = () => this.updateBufferProgress();
     const onRateChange = () => this.updateSpeedUI();
 
@@ -229,6 +238,8 @@ export class VideoController {
     this.video.addEventListener('pause', onPlayPause);
     this.video.addEventListener('timeupdate', onTimeUpdate);
     this.video.addEventListener('volumechange', onVolumeChange, true);
+    this.video.addEventListener('seeking', onSeeking);
+    this.video.addEventListener('seeked', onSeeked);
     this.video.addEventListener('progress', onProgress);
     this.video.addEventListener('ratechange', onRateChange);
 
@@ -241,6 +252,8 @@ export class VideoController {
       this.video.removeEventListener('pause', onPlayPause);
       this.video.removeEventListener('timeupdate', onTimeUpdate);
       this.video.removeEventListener('volumechange', onVolumeChange, true);
+      this.video.removeEventListener('seeking', onSeeking);
+      this.video.removeEventListener('seeked', onSeeked);
       this.video.removeEventListener('progress', onProgress);
       this.video.removeEventListener('ratechange', onRateChange);
       unsubscribeVolume();
@@ -268,6 +281,7 @@ export class VideoController {
       e.preventDefault();
       const interval = this.config.seekInterval || 5;
       this.video.currentTime = Math.max(0, this.video.currentTime - interval);
+      this.showControls();
       this.updateTimeDisplay();
       this.resetAutoHideTimer();
     };
@@ -283,6 +297,7 @@ export class VideoController {
       const interval = this.config.seekInterval || 5;
       const dur = isFinite(this.video.duration) ? this.video.duration : Infinity;
       this.video.currentTime = Math.min(dur, this.video.currentTime + interval);
+      this.showControls();
       this.updateTimeDisplay();
       this.resetAutoHideTimer();
     };
@@ -623,7 +638,7 @@ export class VideoController {
     });
   }
 
-  private resetAutoHideTimer(): void {
+  resetAutoHideTimer(): void {
     if (this.autoHideTimeout) clearTimeout(this.autoHideTimeout);
     this.showControls();
 

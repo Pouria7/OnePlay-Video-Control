@@ -220,5 +220,77 @@ describe('ShortcutManager', () => {
     manager.stop();
     video.remove();
   });
+
+  it('wakes controls by invoking showControls and resetAutoHideTimer on seek shortcuts', () => {
+    const video = document.createElement('video');
+    document.body.appendChild(video);
+    video.currentTime = 30;
+
+    let showControlsCalled = false;
+    let resetAutoHideCalled = false;
+
+    const mockController = {
+      video,
+      showControls: () => {
+        showControlsCalled = true;
+      },
+      resetAutoHideTimer: () => {
+        resetAutoHideCalled = true;
+      }
+    };
+
+    const mockControllerManager = {
+      getAllControllers: () => [mockController as any]
+    } as any;
+
+    const manager = new ShortcutManager(mockControllerManager, {
+      seekInterval: 5,
+      shortcuts: {
+        volumeDown: 'ArrowDown',
+        volumeUp: 'ArrowUp',
+        togglePlay: 'Space',
+        seekBackward: 'ArrowLeft',
+        seekForward: 'ArrowRight',
+        toggleMute: 'KeyM',
+        toggleFullscreen: 'KeyF'
+      }
+    });
+
+    manager.start();
+
+    // Trigger seek backward
+    window.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        key: 'ArrowLeft',
+        code: 'ArrowLeft',
+        bubbles: true,
+        cancelable: true
+      })
+    );
+
+    expect(video.currentTime).toBe(25);
+    expect(showControlsCalled).toBe(true);
+    expect(resetAutoHideCalled).toBe(true);
+
+    // Reset flags and trigger seek forward
+    showControlsCalled = false;
+    resetAutoHideCalled = false;
+
+    window.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        key: 'ArrowRight',
+        code: 'ArrowRight',
+        bubbles: true,
+        cancelable: true
+      })
+    );
+
+    expect(video.currentTime).toBe(30);
+    expect(showControlsCalled).toBe(true);
+    expect(resetAutoHideCalled).toBe(true);
+
+    manager.stop();
+    video.remove();
+  });
 });
 

@@ -126,6 +126,14 @@ export class ShortcutManager {
           document.exitFullscreen().catch(() => {});
         }
       }
+
+      // Wake controls and exit idle mode upon shortcut interaction
+      if (typeof targetController.showControls === 'function') {
+        targetController.showControls();
+      }
+      if (typeof targetController.resetAutoHideTimer === 'function') {
+        targetController.resetAutoHideTimer();
+      }
     };
 
     window.addEventListener('keydown', this.keydownHandler, { capture: true });

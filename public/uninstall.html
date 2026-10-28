@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Uninstall Feedback — OnePlay Video Control</title>
+  <meta name="description" content="Help us improve OnePlay - Video Control by sharing your feedback.">
+  <link rel="icon" href="/icons/icon-48.png">
+
+  <!-- Prevent all caching so redirects and form targets update instantly without 301 cache issues -->
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+
+  <!-- Fallback meta refresh in case JavaScript is disabled -->
+  <meta id="metaRefresh" http-equiv="refresh" content="1; url=https://docs.google.com/forms/d/e/1FAIpQLSdSDELdLhChOE-naJrdHiajuETvgWJ7ppJ15VXwEAulmT4hzw/viewform?usp=pp_url&utm_source=oneplay_extension&utm_medium=browser_uninstall&utm_campaign=uninstall_survey">
+
+  <style>
+    :root {
+      color-scheme: light dark;
+      --fg: #1d1d1f;
+      --muted: #6e6e73;
+      --bg: #f9f9fb;
+      --card-bg: #ffffff;
+      --border: rgba(0, 0, 0, 0.08);
+      --accent: #2563eb;
+      --accent-hover: #1d4ed8;
+      --shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --fg: #f5f5f7;
+        --muted: #a1a1a6;
+        --bg: #0f1012;
+        --card-bg: #18191c;
+        --border: rgba(255, 255, 255, 0.08);
+        --accent: #3b82f6;
+        --accent-hover: #60a5fa;
+        --shadow: 0 4px 24px rgba(0, 0, 0, 0.35);
+      }
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font: 16px/1.6 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      color: var(--fg);
+      background: var(--bg);
+      padding: 24px;
+    }
+    .card {
+      max-width: 500px;
+      width: 100%;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 40px 32px;
+      text-align: center;
+      box-shadow: var(--shadow);
+    }
+    .logo {
+      width: 64px;
+      height: 64px;
+      margin-bottom: 16px;
+    }
+    h1 {
+      font-size: 1.5rem;
+      margin: 0 0 8px;
+      font-weight: 600;
+    }
+    p {
+      color: var(--muted);
+      margin: 0 0 24px;
+      font-size: 0.95rem;
+    }
+    .spinner {
+      width: 28px;
+      height: 28px;
+      margin: 0 auto 20px;
+      border: 3px solid rgba(125, 125, 125, 0.2);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    .btn {
+      display: inline-block;
+      padding: 10px 20px;
+      background: var(--accent);
+      color: #fff;
+      text-decoration: none;
+      font-weight: 500;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      transition: background 0.15s ease;
+    }
+    .btn:hover {
+      background: var(--accent-hover);
+    }
+    .hint {
+      margin-top: 16px;
+      font-size: 0.8rem;
+      color: var(--muted);
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <img class="logo" src="/icons/icon-128.png" alt="OnePlay Logo" width="64" height="64">
+    <div class="spinner" id="spinner"></div>
+    <h1>We're sorry to see you go!</h1>
+    <p>Redirecting you to a quick 30-second feedback survey to help us improve OnePlay...</p>
+    <a id="redirectLink" class="btn" href="https://docs.google.com/forms/d/e/1FAIpQLSdSDELdLhChOE-naJrdHiajuETvgWJ7ppJ15VXwEAulmT4hzw/viewform?usp=pp_url&utm_source=oneplay_extension&utm_medium=browser_uninstall&utm_campaign=uninstall_survey">Continue to Survey</a>
+    <div class="hint">If you are not redirected automatically, click the button above.</div>
+  </div>
+
+  <script>
+    // =========================================================================
+    // CONFIGURATION: Google Form URL with UTM tracking
+    // =========================================================================
+    const BASE_FORM_URL = "https://docs.google.com/forms/d/e/1FAIpQLSdSDELdLhChOE-naJrdHiajuETvgWJ7ppJ15VXwEAulmT4hzw/viewform";
+
+    // Installed version passed by the extension in simple query string (e.g. ?v=0.9.3)
+    const urlParams = new URLSearchParams(window.location.search);
+    const installedVersion = urlParams.get('v') || 'unknown';
+
+    // The hosted page on Cloudflare Pages represents the latest released version
+    const latestVersion = '0.9.4';
+
+    // Construct destination URL with UTM tracking parameters
+    const targetUrl = new URL(BASE_FORM_URL);
+    targetUrl.searchParams.set('usp', 'pp_url');
+    targetUrl.searchParams.set('utm_source', 'oneplay_extension');
+    targetUrl.searchParams.set('utm_medium', 'browser_uninstall');
+    targetUrl.searchParams.set('utm_campaign', 'uninstall_survey');
+
+    // Build UTM content to capture installed version vs latest version
+    const contentTag = (installedVersion !== 'unknown' && installedVersion !== latestVersion)
+      ? `cur_v${installedVersion}_lat_v${latestVersion}`
+      : `v${installedVersion}`;
+    targetUrl.searchParams.set('utm_content', contentTag);
+
+    // Also pass direct query parameters for forms or spreadsheets that parse query params
+    if (installedVersion !== 'unknown') {
+      targetUrl.searchParams.set('installed_version', installedVersion);
+    }
+    targetUrl.searchParams.set('latest_version', latestVersion);
+
+    // Update fallback link and meta refresh
+    const redirectLink = document.getElementById('redirectLink');
+    if (redirectLink) {
+      redirectLink.href = targetUrl.toString();
+    }
+    const metaRefresh = document.getElementById('metaRefresh');
+    if (metaRefresh) {
+      metaRefresh.content = '1; url=' + targetUrl.toString();
+    }
+
+    // Perform immediate redirection using replace (keeps browser history clean)
+    try {
+      window.location.replace(targetUrl.toString());
+    } catch (e) {
+      window.location.href = targetUrl.toString();
+    }
+  </script>
+</body>
+</html>
