@@ -16,7 +16,9 @@ export const DEFAULT_SHORTCUTS: ShortcutsConfig = {
   volumeUp: 'ArrowUp',
   volumeDown: 'ArrowDown',
   toggleMute: 'KeyM',
-  toggleFullscreen: 'KeyF'
+  toggleFullscreen: 'KeyF',
+  speedDown: 'BracketLeft',
+  speedUp: 'BracketRight'
 };
 
 export interface GlobalSettings {

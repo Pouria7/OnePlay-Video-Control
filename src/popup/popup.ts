@@ -138,12 +138,14 @@ document.addEventListener('DOMContentLoaded', async () => {
   const popScSeek = document.getElementById('popScSeek');
   const popScVol = document.getElementById('popScVol');
   const popScMute = document.getElementById('popScMute');
+  const popScSpeed = document.getElementById('popScSpeed');
   const shortcuts = globalSettings.shortcuts || DEFAULT_SHORTCUTS;
 
   if (popScPlay) popScPlay.textContent = formatShortcutForDisplay(shortcuts.togglePlay);
   if (popScSeek) popScSeek.textContent = `${formatShortcutForDisplay(shortcuts.seekBackward)} / ${formatShortcutForDisplay(shortcuts.seekForward)}`;
   if (popScVol) popScVol.textContent = `${formatShortcutForDisplay(shortcuts.volumeUp)} / ${formatShortcutForDisplay(shortcuts.volumeDown)}`;
   if (popScMute) popScMute.textContent = formatShortcutForDisplay(shortcuts.toggleMute);
+  if (popScSpeed) popScSpeed.textContent = `${formatShortcutForDisplay(shortcuts.speedDown)} / ${formatShortcutForDisplay(shortcuts.speedUp)}`;
 
   // Query content script for live status
   if (activeTabId) {

@@ -4,6 +4,7 @@
 
 import { SiteSettings } from '../../storage/types';
 import { TrackedVideo, VideoCandidateContext } from '../detection/types';
+import { AdapterActionHooks, VideoAdapterContext } from './action-types';
 
 export interface SiteAdapter {
   readonly id: string;
@@ -35,14 +36,19 @@ export interface SiteAdapter {
   selectVideos?(candidates: TrackedVideo[]): TrackedVideo[] | null;
 
   /**
-   * Lifecycle hooks
+   * Lifecycle hooks receiving unified context
    */
   onVideoDetected?(video: HTMLVideoElement): void;
-  onVideoActivated?(video: HTMLVideoElement): void;
-  onVideoDeactivated?(video: HTMLVideoElement): void;
+  onVideoActivated?(ctx: VideoAdapterContext): void;
+  onVideoDeactivated?(ctx: VideoAdapterContext): void;
 
   /**
    * Hover and interaction bridge hook
    */
-  onControllerHover?(video: HTMLVideoElement, isHovered: boolean, controllerHost: HTMLElement): void;
+  onControllerHover?(ctx: VideoAdapterContext, isHovered: boolean): void;
+
+  /**
+   * Optional per-action before/after interceptors.
+   */
+  readonly actions?: AdapterActionHooks;
 }

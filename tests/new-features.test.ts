@@ -198,6 +198,18 @@ describe('Idle state & Seeking wakeup', () => {
     // Controller should remove idle class immediately
     expect(bar.classList.contains('idle')).toBe(false);
 
+    // Simulate idle state again for volumechange
+    bar.classList.add('idle');
+    expect(bar.classList.contains('idle')).toBe(true);
+    video.dispatchEvent(new Event('volumechange'));
+    expect(bar.classList.contains('idle')).toBe(false);
+
+    // Simulate idle state again for ratechange
+    bar.classList.add('idle');
+    expect(bar.classList.contains('idle')).toBe(true);
+    video.dispatchEvent(new Event('ratechange'));
+    expect(bar.classList.contains('idle')).toBe(false);
+
     controller.destroy();
     video.remove();
   });

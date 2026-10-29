@@ -26,6 +26,10 @@ export function normalizeKey(key: string): string {
   if (k === 'right' || k === 'arrowright') return 'arrowright';
   if (k === 'up' || k === 'arrowup') return 'arrowup';
   if (k === 'down' || k === 'arrowdown') return 'arrowdown';
+  if (k === '[' || k === 'bracketleft') return 'bracketleft';
+  if (k === ']' || k === 'bracketright') return 'bracketright';
+  if (k === '<' || k === 'comma') return 'comma';
+  if (k === '>' || k === 'period') return 'period';
   if (k.startsWith('key') && k.length === 4) return k;
   if (/^[a-z]$/.test(k)) return `key${k}`;
   if (/^[0-9]$/.test(k)) return `digit${k}`;
@@ -138,6 +142,14 @@ export function formatShortcutForDisplay(shortcutStr: string): string {
     displayKey = '↑ Up';
   } else if (lower === 'arrowdown' || lower === 'down') {
     displayKey = '↓ Down';
+  } else if (lower === 'bracketleft' || lower === '[') {
+    displayKey = '[';
+  } else if (lower === 'bracketright' || lower === ']') {
+    displayKey = ']';
+  } else if (lower === 'comma' || lower === '<') {
+    displayKey = '<';
+  } else if (lower === 'period' || lower === '>') {
+    displayKey = '>';
   } else if (lower.startsWith('key') && lower.length === 4) {
     displayKey = lower.substring(3).toUpperCase();
   } else if (lower.startsWith('digit') && lower.length === 6) {

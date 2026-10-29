@@ -44,11 +44,15 @@ class ContentCoordinator {
     await this.reloadConfiguration();
 
     // 2. Initialize Controller Manager
-    this.controllerManager = new ControllerManager(this.currentConfig, (video, isHovered, host) => {
-      if (this.activeAdapter.onControllerHover) {
-        this.activeAdapter.onControllerHover(video, isHovered, host);
-      }
-    });
+    this.controllerManager = new ControllerManager(
+      this.currentConfig,
+      (ctx, isHovered) => {
+        if (this.activeAdapter.onControllerHover) {
+          this.activeAdapter.onControllerHover(ctx, isHovered);
+        }
+      },
+      this.activeAdapter
+    );
 
     // 3. Initialize Shortcut Manager
     this.shortcutManager = new ShortcutManager(this.controllerManager, {
@@ -61,9 +65,11 @@ class ContentCoordinator {
     this.registry = new VideoRegistry(
       () => this.scheduleSelection(),
       (_videoId, video) => {
+        const controller = this.controllerManager.getController(video);
+        const ctx = controller?.getAdapterContext();
         this.controllerManager.removeController(video);
-        if (this.activeAdapter.onVideoDeactivated) {
-          this.activeAdapter.onVideoDeactivated(video);
+        if (ctx && this.activeAdapter.onVideoDeactivated) {
+          this.activeAdapter.onVideoDeactivated(ctx);
         }
       },
       {
@@ -154,7 +160,12 @@ class ContentCoordinator {
 
     // Notify adapter of newly activated videos
     if (this.activeAdapter.onVideoActivated) {
-      activeCandidates.forEach((c) => this.activeAdapter.onVideoActivated!(c.element));
+      activeCandidates.forEach((c) => {
+        const controller = this.controllerManager.getController(c.element);
+        if (controller) {
+          this.activeAdapter.onVideoActivated!(controller.getAdapterContext());
+        }
+      });
     }
   }, 100);
 
@@ -166,6 +177,8 @@ class ContentCoordinator {
       const newUrl = new URL(window.location.href);
       if (newUrl.href !== this.currentUrl.href) {
         this.currentUrl = newUrl;
+        this.activeAdapter = adapterManager.resolve(this.currentUrl);
+        this.controllerManager?.setAdapter(this.activeAdapter);
         const newDomain = getDomainFromUrl(newUrl.href);
         if (newDomain !== this.currentDomain) {
           this.currentDomain = newDomain;

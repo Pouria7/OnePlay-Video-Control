@@ -3,7 +3,7 @@
  *
  * Coordinates UI interactions, video playback synchronization,
  * drag-to-seek, auto-hide timer, theme styling, manual controller dragging,
- * and context-menu actions for a single target video.
+ * context-menu actions, and sequential action dispatching for a single target video.
  *
  * Heavy lifting for download/recording is delegated to RecordingManager.
  * Volume state management (preventing YouTube preview muting overrides)
@@ -18,6 +18,11 @@ import { ResolvedConfig } from '../../storage/types';
 import { themeEngine } from '../../themes/theme-engine';
 import { formatTime } from '../../utils/dom';
 import { RecordingManager } from './recording-manager';
+import { SiteAdapter } from '../adapters/site-adapter';
+import { GenericAdapter } from '../adapters/generic-adapter';
+import { VideoAdapterContext } from '../adapters/action-types';
+import { VideoActionDispatcher } from '../actions/action-dispatcher';
+import { stepSpeed } from './context-menu/builtin-items';
 
 /** CSS state classes toggled on shadow-UI elements. */
 const CLASS = {
@@ -41,6 +46,10 @@ const ATTR = {
   SPEED: 'data-speed',
 } as const;
 
+export type VideoHoverCallback =
+  | ((ctx: VideoAdapterContext, isHovered: boolean) => void)
+  | ((video: HTMLVideoElement, isHovered: boolean, host: HTMLElement) => void);
+
 export class VideoController {
   readonly id: string;
   readonly video: HTMLVideoElement;
@@ -50,25 +59,30 @@ export class VideoController {
   private volumeState: VolumeState;
   private contextMenu: ContextMenu;
   private config: ResolvedConfig;
+  private adapter: SiteAdapter;
+  private dispatcher: VideoActionDispatcher;
   private isDestroyed = false;
   private isDraggingScrub = false;
   private isDraggingBar = false;
   private autoHideTimeout: ReturnType<typeof setTimeout> | null = null;
   private cleanupFns: Array<() => void> = [];
   private recording: RecordingManager;
+  private savedObjectFit: string | null = null;
 
-  private onHoverCallback?: (video: HTMLVideoElement, isHovered: boolean, host: HTMLElement) => void;
+  private onHoverCallback?: VideoHoverCallback;
 
   constructor(
     id: string,
     video: HTMLVideoElement,
     config: ResolvedConfig,
-    onHover?: (video: HTMLVideoElement, isHovered: boolean, host: HTMLElement) => void
+    onHover?: VideoHoverCallback,
+    adapter?: SiteAdapter
   ) {
     this.id = id;
     this.video = video;
     this.config = config;
     this.onHoverCallback = onHover;
+    this.adapter = adapter ?? new GenericAdapter();
 
     this.ui = createShadowUI();
     this.applyTheme(config.theme);
@@ -76,6 +90,8 @@ export class VideoController {
 
     this.positionManager = new PositionManager(video, this.ui.host, this.ui.container, this.config);
     this.volumeState = new VolumeState(video);
+
+    this.dispatcher = new VideoActionDispatcher(() => this.getAdapterContext(), this.adapter);
 
     this.recording = new RecordingManager(video, {
       onRecordingStart: () => this.handleRecordingStart(),
@@ -106,6 +122,23 @@ export class VideoController {
     this.bindBarDragEvents();
     this.syncInitialState();
     this.resetAutoHideTimer();
+  }
+
+  getAdapterContext(): VideoAdapterContext {
+    return {
+      video: this.video,
+      controllerHost: this.ui.host,
+      settings: this.config,
+      volumeState: this.volumeState,
+    };
+  }
+
+  getDispatcher(): VideoActionDispatcher {
+    return this.dispatcher;
+  }
+
+  getAdapter(): SiteAdapter {
+    return this.adapter;
   }
 
   applyTheme(themeId: string): void {
@@ -207,17 +240,133 @@ export class VideoController {
     item.classList.toggle(CLASS.ACTIVE, isActive);
   }
 
+  // ─── Actions Pipeline ─────────────────────────────────────────────────
+
+  async play(): Promise<void> {
+    await this.dispatcher.dispatchUserAction('play', undefined as void, async () => {
+      await this.video.play().catch(() => {});
+    });
+  }
+
+  async pause(): Promise<void> {
+    await this.dispatcher.dispatchUserAction('pause', undefined as void, () => {
+      this.video.pause();
+    });
+  }
+
+  async togglePlay(): Promise<void> {
+    if (this.video.paused || this.video.ended) {
+      await this.play();
+    } else {
+      await this.pause();
+    }
+  }
+
+  async seekTo(targetTime: number, delta?: number): Promise<void> {
+    const dur = isFinite(this.video.duration) ? this.video.duration : Infinity;
+    const bounded = Math.max(0, Math.min(dur, targetTime));
+    await this.dispatcher.dispatchUserAction('seek', { targetTime: bounded, delta }, (payload) => {
+      this.video.currentTime = payload.targetTime;
+      this.showControls();
+      this.updateTimeDisplay();
+      this.resetAutoHideTimer();
+    });
+  }
+
+  async seekBy(delta: number): Promise<void> {
+    const cur = this.video.currentTime || 0;
+    await this.seekTo(cur + delta, delta);
+  }
+
+  async setSpeed(rate: number): Promise<void> {
+    await this.dispatcher.dispatchUserAction('setSpeed', { rate }, (payload) => {
+      this.video.playbackRate = payload.rate;
+      this.updateSpeedUI();
+      this.showControls();
+      this.resetAutoHideTimer();
+    });
+  }
+
+  async stepSpeed(direction: 1 | -1): Promise<void> {
+    const next = stepSpeed(this.video.playbackRate || 1, direction);
+    await this.setSpeed(next);
+  }
+
+  async speedDown(): Promise<void> {
+    await this.stepSpeed(-1);
+  }
+
+  async speedUp(): Promise<void> {
+    await this.stepSpeed(1);
+  }
+
+  async setVolume(volume: number): Promise<void> {
+    const v = Math.min(1, Math.max(0, volume));
+    const muted = v <= 0.001;
+    await this.dispatcher.dispatchUserAction('setVolume', { volume: v, muted }, (payload) => {
+      this.volumeState.setVolume(payload.volume);
+      if (payload.muted !== this.volumeState.muted) {
+        this.volumeState.setMuted(payload.muted);
+      }
+    });
+  }
+
+  async setMuted(muted: boolean): Promise<void> {
+    const curVol = this.volumeState.volume;
+    await this.dispatcher.dispatchUserAction('setVolume', { volume: curVol, muted }, (payload) => {
+      this.volumeState.setMuted(payload.muted);
+    });
+  }
+
+  async toggleMute(): Promise<void> {
+    await this.setMuted(!this.volumeState.isSilent);
+  }
+
+  async toggleFullscreen(): Promise<void> {
+    const entering = !document.fullscreenElement;
+    await this.dispatcher.dispatchUserAction(
+      'toggleFullscreen',
+      { entering, fillToFit: true },
+      async (payload) => {
+        if (payload.entering) {
+          if (this.savedObjectFit === null) {
+            this.savedObjectFit = this.video.style.objectFit || '';
+          }
+          if (!payload.fillToFit) {
+            this.video.style.objectFit = 'contain';
+          }
+          if (this.video.requestFullscreen) {
+            await this.video.requestFullscreen().catch(() => {});
+          } else if ((this.video as any).webkitRequestFullscreen) {
+            (this.video as any).webkitRequestFullscreen();
+          }
+        } else {
+          if (document.exitFullscreen) {
+            await document.exitFullscreen().catch(() => {});
+          }
+          if (this.savedObjectFit !== null) {
+            this.video.style.objectFit = this.savedObjectFit;
+            this.savedObjectFit = null;
+          }
+        }
+      }
+    );
+  }
+
   // ─── Video events ─────────────────────────────────────────────────────
 
   private bindVideoEvents(): void {
     const onPlayPause = () => {
       this.updatePlayState();
       this.resetAutoHideTimer();
+      const action = this.video.paused ? 'pause' : 'play';
+      this.dispatcher.notifyExternalAfter(action, undefined as void, 'external');
     };
     const onTimeUpdate = () => {
       if (!this.isDraggingScrub) this.updateTimeDisplay();
     };
     const onVolumeChange = () => {
+      this.showControls();
       this.volumeState.handleMediaVolumeChange();
       this.updateVolumeUI();
       this.resetAutoHideTimer();
@@ -228,11 +377,24 @@ export class VideoController {
       this.resetAutoHideTimer();
     };
     const onSeeked = () => {
+      this.showControls();
       this.updateTimeDisplay();
       this.resetAutoHideTimer();
+      this.dispatcher.notifyExternalAfter('seek', { targetTime: this.video.currentTime }, 'external');
     };
     const onProgress = () => this.updateBufferProgress();
-    const onRateChange = () => this.updateSpeedUI();
+    const onRateChange = () => {
+      this.showControls();
+      this.updateSpeedUI();
+      this.resetAutoHideTimer();
+      this.dispatcher.notifyExternalAfter('setSpeed', { rate: this.video.playbackRate }, 'external');
+    };
+    const onFullscreenChange = () => {
+      if (!document.fullscreenElement && this.savedObjectFit !== null) {
+        this.video.style.objectFit = this.savedObjectFit;
+        this.savedObjectFit = null;
+      }
+    };
 
     this.video.addEventListener('play', onPlayPause);
     this.video.addEventListener('pause', onPlayPause);
@@ -242,9 +404,19 @@ export class VideoController {
     this.video.addEventListener('seeked', onSeeked);
     this.video.addEventListener('progress', onProgress);
     this.video.addEventListener('ratechange', onRateChange);
+    document.addEventListener('fullscreenchange', onFullscreenChange);
 
-    const unsubscribeVolume = this.volumeState.subscribe(() => {
+    const unsubscribeVolume = this.volumeState.subscribe((snapshot, source) => {
+      this.showControls();
       this.updateVolumeUI();
+      this.resetAutoHideTimer();
+      if (source === 'external') {
+        this.dispatcher.notifyExternalAfter(
+          'setVolume',
+          { volume: snapshot.volume, muted: snapshot.muted },
+          'external'
+        );
+      }
     });
 
     this.cleanupFns.push(() => {
@@ -256,6 +428,7 @@ export class VideoController {
       this.video.removeEventListener('seeked', onSeeked);
       this.video.removeEventListener('progress', onProgress);
       this.video.removeEventListener('ratechange', onRateChange);
+      document.removeEventListener('fullscreenchange', onFullscreenChange);
       unsubscribeVolume();
     });
   }
@@ -267,8 +440,7 @@ export class VideoController {
     const handlePlayPauseClick = (e: MouseEvent) => {
       e.stopPropagation();
       e.preventDefault();
-      if (this.video.paused) this.video.play().catch(() => {});
-      else this.video.pause();
+      this.togglePlay();
     };
     this.ui.playPauseBtn.addEventListener('click', handlePlayPauseClick);
     this.cleanupFns.push(() =>
@@ -280,10 +452,7 @@ export class VideoController {
       e.stopPropagation();
       e.preventDefault();
       const interval = this.config.seekInterval || 5;
-      this.video.currentTime = Math.max(0, this.video.currentTime - interval);
-      this.showControls();
-      this.updateTimeDisplay();
-      this.resetAutoHideTimer();
+      this.seekBy(-interval);
     };
     this.ui.seekBackBtn.addEventListener('click', handleSeekBackClick);
     this.cleanupFns.push(() =>
@@ -295,11 +464,7 @@ export class VideoController {
       e.stopPropagation();
       e.preventDefault();
       const interval = this.config.seekInterval || 5;
-      const dur = isFinite(this.video.duration) ? this.video.duration : Infinity;
-      this.video.currentTime = Math.min(dur, this.video.currentTime + interval);
-      this.showControls();
-      this.updateTimeDisplay();
-      this.resetAutoHideTimer();
+      this.seekBy(interval);
     };
     this.ui.seekForwardBtn.addEventListener('click', handleSeekForwardClick);
     this.cleanupFns.push(() =>
@@ -322,7 +487,7 @@ export class VideoController {
       e.stopPropagation();
       const barRect = this.ui.container.getBoundingClientRect();
       this.ui.container.classList.toggle(CLASS.POPUPS_DOWN, barRect.top < 250);
-      this.volumeState.toggleMute();
+      this.toggleMute();
     };
     this.ui.volumeBtn.addEventListener('click', handleVolumeBtnClick);
     this.cleanupFns.push(() =>
@@ -332,7 +497,7 @@ export class VideoController {
     const handleVolumeInput = (e: Event) => {
       e.stopPropagation();
       const val = parseFloat(this.ui.volumeSlider.value);
-      this.volumeState.setVolume(val);
+      this.setVolume(val);
     };
     this.ui.volumeSlider.addEventListener('input', handleVolumeInput);
     this.cleanupFns.push(() =>
@@ -368,8 +533,7 @@ export class VideoController {
 
       const ratio = getProgressRatioFromEvent(e);
       const duration = isFinite(this.video.duration) ? this.video.duration : 0;
-      this.video.currentTime = ratio * duration;
-      this.updateTimeDisplay();
+      this.seekTo(ratio * duration);
 
       const onWindowMouseMove = (moveEvent: MouseEvent) =>
         handleProgressMouseMove(moveEvent);
@@ -378,9 +542,7 @@ export class VideoController {
         this.setScrubbing(false);
         const endRatio = getProgressRatioFromEvent(upEvent);
         const finalDuration = isFinite(this.video.duration) ? this.video.duration : 0;
-        this.video.currentTime = endRatio * finalDuration;
-        this.updateTimeDisplay();
-        this.resetAutoHideTimer();
+        this.seekTo(endRatio * finalDuration);
 
         window.removeEventListener('mousemove', onWindowMouseMove);
         window.removeEventListener('mouseup', onWindowMouseUp);
@@ -412,7 +574,7 @@ export class VideoController {
       const handleSpeedItemClick = (e: MouseEvent) => {
         e.stopPropagation();
         const speed = parseFloat(item.getAttribute(ATTR.SPEED) || '1');
-        this.video.playbackRate = speed;
+        this.setSpeed(speed);
         this.closeSpeedMenu();
       };
       item.addEventListener('click', handleSpeedItemClick);
@@ -465,14 +627,7 @@ export class VideoController {
     // 5. Fullscreen
     const handleFullscreenClick = (e: MouseEvent) => {
       e.stopPropagation();
-      if (!document.fullscreenElement) {
-        if (this.video.requestFullscreen) this.video.requestFullscreen().catch(() => {});
-        else if ((this.video as any).webkitRequestFullscreen) {
-          (this.video as any).webkitRequestFullscreen();
-        }
-      } else {
-        if (document.exitFullscreen) document.exitFullscreen().catch(() => {});
-      }
+      this.toggleFullscreen();
     };
     this.ui.fullscreenBtn.addEventListener('click', handleFullscreenClick);
     this.cleanupFns.push(() =>
@@ -482,11 +637,11 @@ export class VideoController {
     // 6. Hover / auto-hide
     const handleMouseEnter = () => {
       this.resetAutoHideTimer();
-      this.onHoverCallback?.(this.video, true, this.ui.host);
+      this.notifyHover(true);
     };
     const handleMouseLeave = () => {
       this.resetAutoHideTimer();
-      this.onHoverCallback?.(this.video, false, this.ui.host);
+      this.notifyHover(false);
     };
     const handleActivity = () => this.resetAutoHideTimer();
 
@@ -501,6 +656,16 @@ export class VideoController {
       this.ui.container.removeEventListener('mousemove', handleActivity);
       this.video.removeEventListener('mousemove', handleActivity);
     });
+  }
+
+  private notifyHover(isHovered: boolean): void {
+    if (!this.onHoverCallback) return;
+    const ctx = this.getAdapterContext();
+    if (this.onHoverCallback.length >= 3) {
+      (this.onHoverCallback as any)(this.video, isHovered, this.ui.host);
+    } else {
+      (this.onHoverCallback as any)(ctx, isHovered);
+    }
   }
 
   // ─── Manual Bar Dragging ──────────────────────────────────────────────
@@ -709,9 +874,5 @@ export class VideoController {
     if (this.ui.host.parentNode) {
       this.ui.host.parentNode.removeChild(this.ui.host);
     }
-  }
-
-  toggleMute(): void {
-    this.volumeState.toggleMute();
   }
 }

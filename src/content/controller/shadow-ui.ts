@@ -930,6 +930,7 @@ export function updateControlHints(ui: ShadowUIElements, config: ControlHintsCon
   setHint(ui.volumeBtn, withShortcut('Mute/Unmute', sc.toggleMute));
   setHint(ui.volumeSlider, withShortcut('Volume', sc.volumeUp, sc.volumeDown));
   setHint(ui.fullscreenBtn, withShortcut('Toggle Fullscreen', sc.toggleFullscreen));
+  setHint(ui.speedBtn, withShortcut('Playback Speed', sc.speedDown, sc.speedUp));
 
   // The seek icons render the interval as text inside the SVG
   const label = secs > 99 ? '99+' : String(secs);

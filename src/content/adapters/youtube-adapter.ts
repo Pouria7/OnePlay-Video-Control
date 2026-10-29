@@ -12,6 +12,7 @@ import { SiteAdapter } from './site-adapter';
 import { SiteSettings } from '../../storage/types';
 import { domainMatches } from '../../utils/url';
 import { VideoCandidateContext } from '../detection/types';
+import { VideoAdapterContext } from './action-types';
 
 export class YouTubeAdapter implements SiteAdapter {
   readonly id = 'youtube';
@@ -130,7 +131,7 @@ export class YouTubeAdapter implements SiteAdapter {
     }
   }
 
-  onVideoActivated(video: HTMLVideoElement): void {
+  onVideoActivated({ video }: VideoAdapterContext): void {
     this.interceptVideoAudio(video);
     const preview = video.closest('ytd-video-preview') || document.querySelector('ytd-video-preview');
     if (preview) {

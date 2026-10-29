@@ -552,7 +552,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     'volumeUp',
     'volumeDown',
     'toggleMute',
-    'toggleFullscreen'
+    'toggleFullscreen',
+    'speedDown',
+    'speedUp'
   ];
 
   function renderShortcutsUI() {

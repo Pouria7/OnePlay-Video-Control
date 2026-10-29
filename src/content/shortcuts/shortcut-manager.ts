@@ -58,8 +58,10 @@ export class ShortcutManager {
       const isVolDown = matchesShortcut(e, shortcuts.volumeDown);
       const isMute = matchesShortcut(e, shortcuts.toggleMute);
       const isFullscreen = matchesShortcut(e, shortcuts.toggleFullscreen);
+      const isSpeedDown = matchesShortcut(e, shortcuts.speedDown) || (!shortcuts.speedDown && e.code === 'BracketLeft');
+      const isSpeedUp = matchesShortcut(e, shortcuts.speedUp) || (!shortcuts.speedUp && e.code === 'BracketRight');
 
-      if (!isPlay && !isSeekBack && !isSeekFwd && !isVolUp && !isVolDown && !isMute && !isFullscreen) {
+      if (!isPlay && !isSeekBack && !isSeekFwd && !isVolUp && !isVolDown && !isMute && !isFullscreen && !isSpeedDown && !isSpeedUp) {
         return;
       }
 
@@ -84,16 +86,26 @@ export class ShortcutManager {
       // host site functionality (e.g. reels navigation on Instagram) instead of overriding it.
 
       if (isPlay) {
-        if (video.paused) {
+        if (typeof targetController.togglePlay === 'function') {
+          targetController.togglePlay();
+        } else if (video.paused) {
           video.play().catch(() => {});
         } else {
           video.pause();
         }
       } else if (isSeekBack) {
-        video.currentTime = Math.max(0, video.currentTime - seekSecs);
+        if (typeof targetController.seekBy === 'function') {
+          targetController.seekBy(-seekSecs);
+        } else {
+          video.currentTime = Math.max(0, video.currentTime - seekSecs);
+        }
       } else if (isSeekFwd) {
-        const dur = isFinite(video.duration) ? video.duration : Infinity;
-        video.currentTime = Math.min(dur, video.currentTime + seekSecs);
+        if (typeof targetController.seekBy === 'function') {
+          targetController.seekBy(seekSecs);
+        } else {
+          const dur = isFinite(video.duration) ? video.duration : Infinity;
+          video.currentTime = Math.min(dur, video.currentTime + seekSecs);
+        }
       } else if (isVolUp) {
         if (targetController.getVolumeState) {
           targetController.getVolumeState().adjustVolume(0.1);
@@ -109,14 +121,18 @@ export class ShortcutManager {
           if (video.volume === 0) video.muted = true;
         }
       } else if (isMute) {
-        if (targetController.getVolumeState) {
+        if (typeof targetController.toggleMute === 'function') {
+          targetController.toggleMute();
+        } else if (targetController.getVolumeState) {
           targetController.getVolumeState().toggleMute();
         } else {
           video.muted = !video.muted;
           if (!video.muted && video.volume === 0) video.volume = 0.5;
         }
       } else if (isFullscreen) {
-        if (!document.fullscreenElement) {
+        if (typeof targetController.toggleFullscreen === 'function') {
+          targetController.toggleFullscreen();
+        } else if (!document.fullscreenElement) {
           if (video.requestFullscreen) {
             video.requestFullscreen().catch(() => {});
           } else if ((video as any).webkitRequestFullscreen) {
@@ -124,6 +140,14 @@ export class ShortcutManager {
           }
         } else {
           document.exitFullscreen().catch(() => {});
+        }
+      } else if (isSpeedDown) {
+        if (typeof targetController.speedDown === 'function') {
+          targetController.speedDown();
+        }
+      } else if (isSpeedUp) {
+        if (typeof targetController.speedUp === 'function') {
+          targetController.speedUp();
         }
       }
 

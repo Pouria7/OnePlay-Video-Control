@@ -2,21 +2,33 @@
  * Controller Manager: Coordinates multiple active floating controller instances
  */
 
-import { VideoController } from './video-controller';
+import { VideoController, VideoHoverCallback } from './video-controller';
 import { TrackedVideo } from '../detection/types';
 import { ResolvedConfig } from '../../storage/types';
+import { SiteAdapter } from '../adapters/site-adapter';
 
 export class ControllerManager {
   private controllers = new Map<HTMLVideoElement, VideoController>();
   private currentConfig: ResolvedConfig;
-  private onHoverCallback?: (video: HTMLVideoElement, isHovered: boolean, host: HTMLElement) => void;
+  private onHoverCallback?: VideoHoverCallback;
+  private adapter?: SiteAdapter;
 
   constructor(
     initialConfig: ResolvedConfig,
-    onHover?: (video: HTMLVideoElement, isHovered: boolean, host: HTMLElement) => void
+    onHover?: VideoHoverCallback,
+    adapter?: SiteAdapter
   ) {
     this.currentConfig = initialConfig;
     this.onHoverCallback = onHover;
+    this.adapter = adapter;
+  }
+
+  setAdapter(adapter: SiteAdapter): void {
+    this.adapter = adapter;
+  }
+
+  getAdapter(): SiteAdapter | undefined {
+    return this.adapter;
   }
 
   /**
@@ -50,7 +62,8 @@ export class ControllerManager {
           candidate.id,
           candidate.element,
           config,
-          this.onHoverCallback
+          this.onHoverCallback,
+          this.adapter
         );
         this.controllers.set(candidate.element, controller);
       }

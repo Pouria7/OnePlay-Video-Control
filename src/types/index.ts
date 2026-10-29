@@ -47,7 +47,9 @@ export type ShortcutAction =
   | 'volumeUp'
   | 'volumeDown'
   | 'toggleMute'
-  | 'toggleFullscreen';
+  | 'toggleFullscreen'
+  | 'speedDown'
+  | 'speedUp';
 
 export interface ShortcutsConfig {
   togglePlay: string;
@@ -57,4 +59,6 @@ export interface ShortcutsConfig {
   volumeDown: string;
   toggleMute: string;
   toggleFullscreen: string;
+  speedDown: string;
+  speedUp: string;
 }
