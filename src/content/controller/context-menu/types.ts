@@ -10,6 +10,7 @@
 import type { ResolvedConfig } from '../../../storage/types';
 import type { RecordingManager } from '../recording-manager';
 import type { VolumeState } from '../volume-state';
+import type { PlaybackRateState } from '../../state/playback-rate-state';
 
 /**
  * Sections are rendered in this order and separated by a divider.
@@ -32,6 +33,7 @@ export type ContextMenuEvent =
 export interface ContextMenuContext {
   readonly video: HTMLVideoElement;
   readonly volume: VolumeState;
+  readonly playbackRate?: PlaybackRateState;
   readonly recording: RecordingManager;
   /** Current resolved configuration (changes over time). */
   getConfig(): ResolvedConfig;

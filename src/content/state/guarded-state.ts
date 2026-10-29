@@ -9,6 +9,11 @@ export interface GuardedStateOptions<T> {
    * (e.g., site forcefully muting audio or resetting playbackRate to 1.0).
    */
   shouldRevertExternal?: (userState: T, domState: T) => boolean;
+  /**
+   * When returning true, the guard remains active indefinitely regardless of elapsed time
+   * since `lastUserChangeAt` (used e.g. by Constant Speed mode).
+   */
+  alwaysGuard?: () => boolean;
   guardWindowMs?: number;
   maxReapplies?: number;
   now?: () => number;
@@ -54,7 +59,9 @@ export class GuardedState<T> {
       return; // Ignore echo of our own write
     }
 
-    const withinGuard = this.now() - this.lastUserChangeAt <= this.guardWindowMs;
+    const isAlwaysGuarded = this.options.alwaysGuard?.() ?? false;
+    const withinGuard =
+      isAlwaysGuarded || this.now() - this.lastUserChangeAt <= this.guardWindowMs;
     const shouldRevert = this.options.shouldRevertExternal?.(this.state, actual) ?? false;
 
     if (withinGuard && shouldRevert && this.reapplyCount < this.maxReapplies) {
@@ -67,6 +74,7 @@ export class GuardedState<T> {
   }
 
   reapply(): void {
+    this.reapplyCount = 0;
     this.options.applyToDom(this.state);
   }
 

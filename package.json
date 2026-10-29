@@ -1,6 +1,6 @@
 {
   "name": "oneplay-video-control",
-  "version": "0.9.4",
+  "version": "0.9.5",
   "description": "OnePlay - Video Control for HTML5 videos across the web, designed for resilient overlay-independent playback.",
   "type": "module",
   "scripts": {

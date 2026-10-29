@@ -33,6 +33,7 @@ export interface GlobalSettings {
   seekInterval: number;
   allowMultiple: boolean;
   autoHideDelay: number;
+  constantSpeed?: boolean;
   shortcuts: ShortcutsConfig;
 }
 
@@ -46,6 +47,8 @@ export interface SiteSettings {
   visibilityThreshold?: number;
   seekInterval?: number;
   allowMultiple?: boolean;
+  constantSpeed?: boolean;
+  savedSpeed?: number;
 }
 
 export interface CustomThemeDefinition {
@@ -78,6 +81,8 @@ export interface ResolvedConfig {
   seekInterval: number;
   allowMultiple: boolean;
   autoHideDelay: number;
+  constantSpeed?: boolean;
+  savedSpeed?: number;
   shortcuts: ShortcutsConfig;
 }
 
@@ -93,5 +98,6 @@ export const DEFAULT_GLOBAL_SETTINGS: GlobalSettings = {
   seekInterval: 5,
   allowMultiple: true,
   autoHideDelay: 2200,
+  constantSpeed: false,
   shortcuts: DEFAULT_SHORTCUTS
 };

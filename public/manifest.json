@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "OnePlay - Video Control",
-  "version": "0.9.4",
+  "version": "0.9.5",
   "description": "OnePlay - Video Control for HTML5 videos across the web, designed for resilient overlay-independent playback.",
   "icons": {
     "16": "icons/icon-16.png",

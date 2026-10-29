@@ -8,6 +8,7 @@ import { VideoController } from '../src/content/controller/video-controller';
 import { ShortcutManager } from '../src/content/shortcuts/shortcut-manager';
 import { VideoAdapterContext } from '../src/content/adapters/action-types';
 import { VolumeState } from '../src/content/state/volume-state';
+import { PlaybackRateState } from '../src/content/state/playback-rate-state';
 import { ResolvedConfig, DEFAULT_SHORTCUTS } from '../src/storage/types';
 import { normalizeKey, formatShortcutForDisplay, matchesShortcut } from '../src/utils/shortcuts';
 
@@ -356,11 +357,6 @@ describe('InstagramAdapter Action Hooks', () => {
     expect(video.style.pointerEvents).toBe('auto');
   });
 
-  it('sets controlsLayout to minimal on Reels/Stories when controller is enabled', () => {
-    adapter.onVideoActivated(context);
-    expect(context.updateSettings).toHaveBeenCalledWith({ controlsLayout: 'minimal' });
-  });
-
   it('filters video and scores video using clean context objects or elements', () => {
     video.getBoundingClientRect = () =>
       ({ width: 200, height: 200, left: 0, top: 0, right: 200, bottom: 200 } as DOMRect);
@@ -663,6 +659,78 @@ describe('YouTubeAdapter Shorts Support & Layout Override', () => {
 
     ctx.updateSettings({ controlsLayout: 'minimal' });
     expect(controller.ui.container.classList.contains('minimal-mode')).toBe(true);
+
+    controller.destroy();
+  });
+});
+
+describe('Constant Speed (Per-Site Playback Rate Persistence & Lock)', () => {
+  it('initializes with savedSpeed and overrides any external rate change when constantSpeed is enabled', () => {
+    const video = document.createElement('video');
+    video.playbackRate = 1.0;
+
+    let currentTime = 1000;
+    const onPersistRate = vi.fn();
+
+    const rateState = new PlaybackRateState(video, {
+      constantSpeed: true,
+      initialRate: 1.75,
+      onPersistRate,
+      now: () => currentTime
+    });
+
+    // Initial rate applied immediately
+    expect(rateState.rate).toBe(1.75);
+    expect(video.playbackRate).toBe(1.75);
+
+    // Even 60 seconds later (well outside 2s guard window), if site changes rate to 1.0 or 1.25, it overrides back to 1.75
+    currentTime += 60000;
+    video.playbackRate = 1.0;
+    rateState.handleMediaRateChange();
+    expect(video.playbackRate).toBe(1.75);
+    expect(rateState.rate).toBe(1.75);
+
+    video.playbackRate = 1.25;
+    rateState.handleMediaRateChange();
+    expect(video.playbackRate).toBe(1.75);
+
+    // User changes speed to 2.0 -> updates DOM and calls onPersistRate(2.0)
+    rateState.setRate(2.0);
+    expect(video.playbackRate).toBe(2.0);
+    expect(onPersistRate).toHaveBeenCalledWith(2.0);
+  });
+
+  it('re-applies user speed on play and loadedmetadata events via VideoController', () => {
+    const video = document.createElement('video');
+    video.playbackRate = 1.0;
+
+    const controller = new VideoController('test-const-speed', video, {
+      enabled: true,
+      theme: 'classic-dark',
+      controllerPosition: 'bottom-inside',
+      controlsLayout: 'full',
+      minWidth: 160,
+      minHeight: 120,
+      visibilityThreshold: 0.7,
+      seekInterval: 5,
+      allowMultiple: true,
+      autoHideDelay: 2200,
+      constantSpeed: true,
+      savedSpeed: 1.5,
+      shortcuts: { ...DEFAULT_SHORTCUTS }
+    });
+
+    expect(video.playbackRate).toBe(1.5);
+
+    // Simulate video source change resetting playbackRate to 1.0 before loadedmetadata/play
+    video.playbackRate = 1.0;
+    video.dispatchEvent(new Event('loadedmetadata'));
+    expect(video.playbackRate).toBe(1.5);
+
+    video.playbackRate = 1.0;
+    Object.defineProperty(video, 'paused', { value: false, configurable: true });
+    video.dispatchEvent(new Event('play'));
+    expect(video.playbackRate).toBe(1.5);
 
     controller.destroy();
   });

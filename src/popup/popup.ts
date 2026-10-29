@@ -29,6 +29,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   const siteThemeSelect = document.getElementById('siteThemeSelect') as HTMLSelectElement;
   const sitePositionSelect = document.getElementById('sitePositionSelect') as HTMLSelectElement;
   const siteLayoutSelect = document.getElementById('siteLayoutSelect') as HTMLSelectElement;
+  const siteConstantSpeedToggle = document.getElementById('siteConstantSpeedToggle') as HTMLInputElement;
+  const siteConstantSpeedSubtext = document.getElementById('siteConstantSpeedSubtext') as HTMLElement;
   const openOptionsBtn = document.getElementById('openOptionsBtn') as HTMLButtonElement;
 
   // Set installed version
@@ -132,6 +134,18 @@ document.addEventListener('DOMContentLoaded', async () => {
   siteThemeSelect.value = siteSettings.theme || '';
   sitePositionSelect.value = siteSettings.controllerPosition || '';
   siteLayoutSelect.value = siteSettings.controlsLayout || '';
+  if (siteConstantSpeedToggle) {
+    siteConstantSpeedToggle.checked = Boolean(siteSettings.constantSpeed);
+  }
+  const updateConstantSpeedSubtext = (enabled: boolean, savedSpeed?: number) => {
+    if (!siteConstantSpeedSubtext) return;
+    if (enabled && savedSpeed && savedSpeed !== 1) {
+      siteConstantSpeedSubtext.textContent = `Locked at ${savedSpeed}x — stays fast even when switching videos`;
+    } else {
+      siteConstantSpeedSubtext.textContent = 'Locks your chosen speed across all videos on this site';
+    }
+  };
+  updateConstantSpeedSubtext(Boolean(siteSettings.constantSpeed), siteSettings.savedSpeed);
 
   // Render Shortcuts Cheatsheet values
   const popScPlay = document.getElementById('popScPlay');
@@ -228,10 +242,18 @@ document.addEventListener('DOMContentLoaded', async () => {
         controlsLayout: selectedLayout
       });
     });
+
+    siteConstantSpeedToggle?.addEventListener('change', async () => {
+      const updated = await storageManager.setSiteSettings(currentDomain, {
+        constantSpeed: siteConstantSpeedToggle.checked
+      });
+      updateConstantSpeedSubtext(Boolean(updated.constantSpeed), updated.savedSpeed);
+    });
   } else {
     siteEnableToggle.disabled = true;
     siteThemeSelect.disabled = true;
     sitePositionSelect.disabled = true;
     siteLayoutSelect.disabled = true;
+    if (siteConstantSpeedToggle) siteConstantSpeedToggle.disabled = true;
   }
 });

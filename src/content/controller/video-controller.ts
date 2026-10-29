@@ -13,10 +13,13 @@
 import { createShadowUI, ShadowUIElements, updateControlHints } from './shadow-ui';
 import { PositionManager } from './position-manager';
 import { VolumeState } from './volume-state';
+import { PlaybackRateState } from '../state/playback-rate-state';
 import { ContextMenu } from './context-menu';
 import { ResolvedConfig, SiteSettings } from '../../storage/types';
+import { storageManager } from '../../storage/storage-manager';
 import { themeEngine } from '../../themes/theme-engine';
 import { formatTime } from '../../utils/dom';
+import { getDomainFromUrl } from '../../utils/url';
 import { RecordingManager } from './recording-manager';
 import { SiteAdapter } from '../adapters/site-adapter';
 import { GenericAdapter } from '../adapters/generic-adapter';
@@ -57,6 +60,7 @@ export class VideoController {
   readonly ui: ShadowUIElements;
   private positionManager: PositionManager;
   private volumeState: VolumeState;
+  private playbackRateState: PlaybackRateState;
   private contextMenu: ContextMenu;
   private config: ResolvedConfig;
   private adapter: SiteAdapter;
@@ -90,6 +94,11 @@ export class VideoController {
 
     this.positionManager = new PositionManager(video, this.ui.host, this.ui.container, this.config);
     this.volumeState = new VolumeState(video);
+    this.playbackRateState = new PlaybackRateState(video, {
+      constantSpeed: Boolean(this.config.constantSpeed),
+      initialRate: this.config.constantSpeed ? (this.config.savedSpeed ?? 1.0) : undefined,
+      onPersistRate: (rate) => this.persistSiteSpeed(rate)
+    });
 
     this.dispatcher = new VideoActionDispatcher(() => this.getAdapterContext(), this.adapter);
 
@@ -106,6 +115,7 @@ export class VideoController {
       context: {
         video: this.video,
         volume: this.volumeState,
+        playbackRate: this.playbackRateState,
         recording: this.recording,
         getConfig: () => this.config,
       },
@@ -130,6 +140,7 @@ export class VideoController {
       controllerHost: this.ui.host,
       settings: this.config,
       volumeState: this.volumeState,
+      playbackRateState: this.playbackRateState,
       url:
         typeof window !== 'undefined' && window.location?.href
           ? new URL(window.location.href)
@@ -141,6 +152,16 @@ export class VideoController {
         this.updateConfig(newConfig);
       },
     };
+  }
+
+  private persistSiteSpeed(rate: number): void {
+    this.config = { ...this.config, savedSpeed: rate };
+    if (typeof window !== 'undefined' && window.location?.href) {
+      const domain = getDomainFromUrl(window.location.href);
+      if (domain) {
+        void storageManager.setSiteSettings(domain, { savedSpeed: rate });
+      }
+    }
   }
 
   getDispatcher(): VideoActionDispatcher {
@@ -171,6 +192,10 @@ export class VideoController {
       shortcuts: this.config.shortcuts,
       seekInterval: this.config.seekInterval,
     });
+    this.playbackRateState.setConstantSpeed(
+      Boolean(this.config.constantSpeed),
+      this.config.savedSpeed
+    );
     this.positionManager.updateConfig(this.config);
     this.contextMenu.refresh();
   }
@@ -181,6 +206,10 @@ export class VideoController {
 
   getVolumeState(): VolumeState {
     return this.volumeState;
+  }
+
+  getPlaybackRateState(): PlaybackRateState {
+    return this.playbackRateState;
   }
 
   getContextMenu(): ContextMenu {
@@ -297,15 +326,12 @@ export class VideoController {
 
   async setSpeed(rate: number): Promise<void> {
     await this.dispatcher.dispatchUserAction('setSpeed', { rate }, (payload) => {
-      this.video.playbackRate = payload.rate;
-      this.updateSpeedUI();
-      this.showControls();
-      this.resetAutoHideTimer();
+      this.playbackRateState.setRate(payload.rate);
     });
   }
 
   async stepSpeed(direction: 1 | -1): Promise<void> {
-    const next = stepSpeed(this.video.playbackRate || 1, direction);
+    const next = stepSpeed(this.playbackRateState.rate, direction);
     await this.setSpeed(next);
   }
 
@@ -374,10 +400,17 @@ export class VideoController {
 
   private bindVideoEvents(): void {
     const onPlayPause = () => {
+      if (!this.video.paused) {
+        this.playbackRateState.reapply();
+      }
       this.updatePlayState();
       this.resetAutoHideTimer();
       const action = this.video.paused ? 'pause' : 'play';
       this.dispatcher.notifyExternalAfter(action, undefined as void, 'external');
+    };
+    const onMediaReady = () => {
+      this.playbackRateState.reapply();
+      this.updateSpeedUI();
     };
     const onTimeUpdate = () => {
       if (!this.isDraggingScrub) this.updateTimeDisplay();
@@ -402,9 +435,9 @@ export class VideoController {
     const onProgress = () => this.updateBufferProgress();
     const onRateChange = () => {
       this.showControls();
+      this.playbackRateState.handleMediaRateChange();
       this.updateSpeedUI();
       this.resetAutoHideTimer();
-      this.dispatcher.notifyExternalAfter('setSpeed', { rate: this.video.playbackRate }, 'external');
     };
     const onFullscreenChange = () => {
       if (!document.fullscreenElement && this.savedObjectFit !== null) {
@@ -415,6 +448,10 @@ export class VideoController {
 
     this.video.addEventListener('play', onPlayPause);
     this.video.addEventListener('pause', onPlayPause);
+    this.video.addEventListener('playing', onMediaReady);
+    this.video.addEventListener('loadedmetadata', onMediaReady);
+    this.video.addEventListener('loadeddata', onMediaReady);
+    this.video.addEventListener('canplay', onMediaReady);
     this.video.addEventListener('timeupdate', onTimeUpdate);
     this.video.addEventListener('volumechange', onVolumeChange, true);
     this.video.addEventListener('seeking', onSeeking);
@@ -436,9 +473,22 @@ export class VideoController {
       }
     });
 
+    const unsubscribeSpeed = this.playbackRateState.subscribe((rate, source) => {
+      this.showControls();
+      this.updateSpeedUI();
+      this.resetAutoHideTimer();
+      if (source === 'external') {
+        this.dispatcher.notifyExternalAfter('setSpeed', { rate }, 'external');
+      }
+    });
+
     this.cleanupFns.push(() => {
       this.video.removeEventListener('play', onPlayPause);
       this.video.removeEventListener('pause', onPlayPause);
+      this.video.removeEventListener('playing', onMediaReady);
+      this.video.removeEventListener('loadedmetadata', onMediaReady);
+      this.video.removeEventListener('loadeddata', onMediaReady);
+      this.video.removeEventListener('canplay', onMediaReady);
       this.video.removeEventListener('timeupdate', onTimeUpdate);
       this.video.removeEventListener('volumechange', onVolumeChange, true);
       this.video.removeEventListener('seeking', onSeeking);
@@ -447,6 +497,7 @@ export class VideoController {
       this.video.removeEventListener('ratechange', onRateChange);
       document.removeEventListener('fullscreenchange', onFullscreenChange);
       unsubscribeVolume();
+      unsubscribeSpeed();
     });
   }
 
@@ -806,13 +857,13 @@ export class VideoController {
   }
 
   private updateSpeedUI(): void {
-    const rate = this.video.playbackRate || 1;
+    const rate = this.playbackRateState.rate;
     this.ui.speedBtn.textContent = `${rate}x`;
 
     const items = this.getSpeedItems();
     items.forEach((item) => {
       const speed = parseFloat(item.getAttribute(ATTR.SPEED) || '1');
-      this.setSpeedItemActive(item, speed === rate);
+      this.setSpeedItemActive(item, Math.abs(speed - rate) < 0.001);
     });
   }
 

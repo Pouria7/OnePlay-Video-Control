@@ -118,18 +118,30 @@ export function createSpeedItem(ctx: ContextMenuContext): ContextMenuItem {
 
   const [slower, value, faster] = Array.from(row.querySelectorAll('button')) as HTMLButtonElement[];
   const video = ctx.video;
+  const rateStore = ctx.playbackRate;
+
+  const getCurrentRate = (): number => (rateStore ? rateStore.rate : video.playbackRate || 1);
+  const applyRate = (nextRate: number): void => {
+    if (rateStore) {
+      rateStore.setRate(nextRate);
+    } else {
+      video.playbackRate = nextRate;
+    }
+  };
 
   const render = () => {
-    const rate = video.playbackRate || 1;
+    const rate = getCurrentRate();
     value.textContent = formatRate(rate);
     value.classList.toggle('is-default', Math.abs(rate - 1) < 0.001);
     slower.disabled = rate <= SPEED_PRESETS[0] + 0.001;
     faster.disabled = rate >= SPEED_PRESETS[SPEED_PRESETS.length - 1] - 0.001;
   };
 
-  slower.addEventListener('click', () => (video.playbackRate = stepSpeed(video.playbackRate || 1, -1)));
-  faster.addEventListener('click', () => (video.playbackRate = stepSpeed(video.playbackRate || 1, 1)));
-  value.addEventListener('click', () => (video.playbackRate = 1));
+  slower.addEventListener('click', () => applyRate(stepSpeed(getCurrentRate(), -1)));
+  faster.addEventListener('click', () => applyRate(stepSpeed(getCurrentRate(), 1)));
+  value.addEventListener('click', () => applyRate(1));
+
+  const unsubscribeStore = rateStore ? rateStore.subscribe(render) : null;
   video.addEventListener('ratechange', render);
   render();
 
@@ -140,7 +152,10 @@ export function createSpeedItem(ctx: ContextMenuContext): ContextMenuItem {
     element: row,
     isVisible: isCompactLayout,
     update: render,
-    destroy: () => video.removeEventListener('ratechange', render)
+    destroy: () => {
+      if (unsubscribeStore) unsubscribeStore();
+      video.removeEventListener('ratechange', render);
+    }
   };
 }
 

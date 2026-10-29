@@ -74,10 +74,20 @@ class ContentCoordinator {
       },
       {
         filterVideo: this.activeAdapter.filterVideo
-          ? (v) => this.activeAdapter.filterVideo!({ video: v, url: this.currentUrl, config: this.currentConfig })
+          ? (v) =>
+              this.activeAdapter.filterVideo!({
+                video: v,
+                url: new URL(window.location.href),
+                config: this.currentConfig
+              })
           : undefined,
         scoreVideo: this.activeAdapter.scoreVideo
-          ? (v, candidate) => this.activeAdapter.scoreVideo!({ video: v, url: this.currentUrl, candidate })
+          ? (v, candidate) =>
+              this.activeAdapter.scoreVideo!({
+                video: v,
+                url: new URL(window.location.href),
+                candidate
+              })
           : undefined
       }
     );
@@ -85,6 +95,7 @@ class ContentCoordinator {
     // 5. Initialize DOM Video Observer
     this.observer = new VideoObserver({
       onVideoAdded: (video) => {
+        this.syncCurrentUrl();
         this.registry.register(video, this.currentConfig);
         if (this.activeAdapter.onVideoDetected) {
           this.activeAdapter.onVideoDetected({ video, url: this.currentUrl });
@@ -130,10 +141,20 @@ class ContentCoordinator {
     if (this.registry) {
       this.registry.setHooks({
         filterVideo: this.activeAdapter.filterVideo
-          ? (v) => this.activeAdapter.filterVideo!({ video: v, url: this.currentUrl, config: this.currentConfig })
+          ? (v) =>
+              this.activeAdapter.filterVideo!({
+                video: v,
+                url: new URL(window.location.href),
+                config: this.currentConfig
+              })
           : undefined,
         scoreVideo: this.activeAdapter.scoreVideo
-          ? (v, candidate) => this.activeAdapter.scoreVideo!({ video: v, url: this.currentUrl, candidate })
+          ? (v, candidate) =>
+              this.activeAdapter.scoreVideo!({
+                video: v,
+                url: new URL(window.location.href),
+                candidate
+              })
           : undefined
       });
       this.registry.updateAll(this.currentConfig);
@@ -142,15 +163,24 @@ class ContentCoordinator {
     this.currentConfig = resolveEffectiveConfig({
       domain: this.currentDomain,
       userSiteSettings: all.siteSettings[this.currentDomain],
-      adapterOverrides: this.activeAdapter.getConfigOverrides(),
+      adapterOverrides: this.activeAdapter.getConfigOverrides(this.currentUrl),
       globalUserSettings: all.globalSettings
     });
+  }
+
+  private syncCurrentUrl(): boolean {
+    if (window.location.href !== this.currentUrl.href) {
+      this.currentUrl = new URL(window.location.href);
+      return true;
+    }
+    return false;
   }
 
   /**
    * Debounced candidate selection to avoid churning during high-frequency events
    */
   private scheduleSelection = debounce(() => {
+    this.syncCurrentUrl();
     if (!this.currentConfig.enabled) {
       this.controllerManager.destroyAll();
       return;
@@ -163,31 +193,35 @@ class ContentCoordinator {
       this.activeAdapter.selectVideos ? (c) => this.activeAdapter.selectVideos!(c) : undefined
     );
 
+    const existingVideos = new Set(
+      this.controllerManager.getAllControllers().map((c) => c.video)
+    );
+
     // Sync active controllers
     this.controllerManager.syncActiveVideos(activeCandidates, this.currentConfig);
 
     // Notify adapter of newly activated videos
     if (this.activeAdapter.onVideoActivated) {
       activeCandidates.forEach((c) => {
-        const controller = this.controllerManager.getController(c.element);
-        if (controller) {
-          this.activeAdapter.onVideoActivated!(controller.getAdapterContext());
+        if (!existingVideos.has(c.element)) {
+          const controller = this.controllerManager.getController(c.element);
+          if (controller) {
+            this.activeAdapter.onVideoActivated!(controller.getAdapterContext());
+          }
         }
       });
     }
   }, 100);
 
   /**
-   * Intercepts SPA route changes
+   * Intercepts SPA route changes (including Isolated World-safe Navigation API & YouTube SPA events)
    */
   private setupSpaNavigationListener(): void {
     const checkNavigation = () => {
-      const newUrl = new URL(window.location.href);
-      if (newUrl.href !== this.currentUrl.href) {
-        this.currentUrl = newUrl;
+      if (this.syncCurrentUrl()) {
         this.activeAdapter = adapterManager.resolve(this.currentUrl);
         this.controllerManager?.setAdapter(this.activeAdapter);
-        const newDomain = getDomainFromUrl(newUrl.href);
+        const newDomain = getDomainFromUrl(this.currentUrl.href);
         if (newDomain !== this.currentDomain) {
           this.currentDomain = newDomain;
           this.reloadConfiguration().then(() => {
@@ -202,8 +236,15 @@ class ContentCoordinator {
 
     window.addEventListener('popstate', checkNavigation, { passive: true });
     window.addEventListener('hashchange', checkNavigation, { passive: true });
+    window.addEventListener('yt-navigate-finish', checkNavigation, { passive: true });
+    window.addEventListener('yt-page-data-updated', checkNavigation, { passive: true });
 
-    // Monkey-patch pushState & replaceState for seamless SPA tracking
+    const nav = (window as any).navigation;
+    if (nav && typeof nav.addEventListener === 'function') {
+      nav.addEventListener('navigatesuccess', checkNavigation, { passive: true });
+    }
+
+    // Monkey-patch pushState & replaceState for same-world SPA tracking
     const originalPushState = history.pushState;
     history.pushState = function (...args: any[]) {
       const result = originalPushState.apply(this, args as any);

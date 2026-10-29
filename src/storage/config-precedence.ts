@@ -89,6 +89,13 @@ export function resolveEffectiveConfig(input: PrecedenceInput): ResolvedConfig {
     globalUser.autoHideDelay,
     defaults.autoHideDelay
   );
+  const constantSpeed = pick(
+    site.constantSpeed,
+    adapter.constantSpeed,
+    globalUser.constantSpeed,
+    defaults.constantSpeed ?? false
+  );
+  const savedSpeed = pick(site.savedSpeed, adapter.savedSpeed, undefined, 1.0);
 
   const defaultShortcuts = defaults.shortcuts || DEFAULT_GLOBAL_SETTINGS.shortcuts;
   const userShortcuts = globalUser.shortcuts || {};
@@ -105,6 +112,8 @@ export function resolveEffectiveConfig(input: PrecedenceInput): ResolvedConfig {
     seekInterval,
     allowMultiple,
     autoHideDelay,
+    constantSpeed,
+    savedSpeed,
     shortcuts
   };
 }

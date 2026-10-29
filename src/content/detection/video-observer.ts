@@ -14,13 +14,14 @@ export class VideoObserver {
   private observer: MutationObserver | null = null;
   private callbacks: VideoObserverCallbacks;
   private isScanning = false;
+  private cleanupListeners: Array<() => void> = [];
 
   constructor(callbacks: VideoObserverCallbacks) {
     this.callbacks = callbacks;
   }
 
   /**
-   * Starts observing the DOM for video additions and removals
+   * Starts observing the DOM for video additions, removals, and media lifecycle activity
    */
   start(): void {
     // 1. Initial scan of existing videos
@@ -29,35 +30,55 @@ export class VideoObserver {
     // 2. Attach MutationObserver
     if (typeof MutationObserver !== 'undefined' && document.documentElement) {
       this.observer = new MutationObserver((mutations) => {
+        const addedVideos = new Set<HTMLVideoElement>();
+        const removedVideos = new Set<HTMLVideoElement>();
+
         for (const mutation of mutations) {
           if (mutation.type === 'childList') {
-            // Process added nodes
+            // Collect added videos
             for (let i = 0; i < mutation.addedNodes.length; i++) {
               const node = mutation.addedNodes[i];
               if (node.nodeType === Node.ELEMENT_NODE) {
                 const el = node as HTMLElement;
                 if (el instanceof HTMLVideoElement) {
-                  this.callbacks.onVideoAdded(el);
+                  addedVideos.add(el);
                 } else if (el.querySelectorAll) {
                   const videos = el.querySelectorAll<HTMLVideoElement>('video');
-                  videos.forEach((v) => this.callbacks.onVideoAdded(v));
+                  videos.forEach((v) => addedVideos.add(v));
                 }
               }
             }
 
-            // Process removed nodes
+            // Collect removed videos
             for (let i = 0; i < mutation.removedNodes.length; i++) {
               const node = mutation.removedNodes[i];
               if (node.nodeType === Node.ELEMENT_NODE) {
                 const el = node as HTMLElement;
                 if (el instanceof HTMLVideoElement) {
-                  this.callbacks.onVideoRemoved(el);
+                  removedVideos.add(el);
                 } else if (el.querySelectorAll) {
                   const videos = el.querySelectorAll<HTMLVideoElement>('video');
-                  videos.forEach((v) => this.callbacks.onVideoRemoved(v));
+                  videos.forEach((v) => removedVideos.add(v));
                 }
               }
             }
+          }
+        }
+
+        // Only report removal if the video is actually disconnected from the DOM.
+        // If it is still connected, it was re-parented/moved (e.g. YouTube Shorts reel swap)
+        // and must be treated as added/updated rather than removed.
+        for (const video of removedVideos) {
+          if (!video.isConnected) {
+            this.callbacks.onVideoRemoved(video);
+          } else {
+            addedVideos.add(video);
+          }
+        }
+
+        for (const video of addedVideos) {
+          if (video.isConnected) {
+            this.callbacks.onVideoAdded(video);
           }
         }
       });
@@ -66,6 +87,26 @@ export class VideoObserver {
         childList: true,
         subtree: true
       });
+    }
+
+    // 3. Capture-phase media lifecycle listeners on document:
+    // Guarantees detection even when a <video> is recycled, moved across containers,
+    // or activated asynchronously after DOM insertion without extra childList mutations.
+    if (typeof document !== 'undefined') {
+      const handleCaptureMedia = (e: Event) => {
+        const target = e.target;
+        if (target instanceof HTMLVideoElement && target.isConnected) {
+          this.callbacks.onVideoAdded(target);
+        }
+      };
+
+      const mediaEvents = ['play', 'playing', 'loadedmetadata', 'canplay'];
+      for (const evt of mediaEvents) {
+        document.addEventListener(evt, handleCaptureMedia, { capture: true, passive: true });
+        this.cleanupListeners.push(() =>
+          document.removeEventListener(evt, handleCaptureMedia, { capture: true })
+        );
+      }
     }
   }
 
@@ -87,12 +128,14 @@ export class VideoObserver {
   }
 
   /**
-   * Disconnects the MutationObserver
+   * Disconnects the MutationObserver and cleans up capture listeners
    */
   stop(): void {
     if (this.observer) {
       this.observer.disconnect();
       this.observer = null;
     }
+    this.cleanupListeners.forEach((fn) => fn());
+    this.cleanupListeners = [];
   }
 }

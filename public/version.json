@@ -3,11 +3,11 @@
   "message": "A new version of OnePlay is available! Chrome will automatically update your extension soon",
   "browsers": {
     "chrome": {
-      "version": "0.9.4",
+      "version": "0.9.5",
       "url": "https://chromewebstore.google.com/detail/oneplay-video-control/gpmickcblelmgkfheifkhnhehhmcfahp"
     },
     "default": {
-      "version": "0.9.4",
+      "version": "0.9.5",
       "url": "https://chromewebstore.google.com/detail/oneplay-video-control/gpmickcblelmgkfheifkhnhehhmcfahp"
     }
   }

@@ -10,6 +10,7 @@ import { TrackedVideo, VideoCandidateContext, VideoDetectionConfig } from './typ
 import { intersectionTracker } from './intersection-tracker';
 import { isCandidateVideo } from './candidate-filter';
 import { calculateVideoScore } from './video-scorer';
+import { calculateViewportIntersectionRatio } from '../../utils/geometry';
 
 export type VideoUpdateCallback = (tracked: TrackedVideo) => void;
 export type VideoRemovedCallback = (videoId: string, video: HTMLVideoElement) => void;
@@ -118,17 +119,15 @@ export class VideoRegistry {
       cleanupFns.push(() => video.removeEventListener(evt, handleMediaEvent));
     });
 
-    // Throttled timeupdate listener
+    // Throttled timeupdate listener: re-evaluates full video state so videos that
+    // started playing while hidden/transitioning (e.g. YouTube Shorts scroll transition)
+    // promote from INACTIVE to CANDIDATE as soon as they become visible.
     let lastTimeUpdate = 0;
     const handleTimeUpdate = () => {
       const now = Date.now();
       if (now - lastTimeUpdate > 250) {
         lastTimeUpdate = now;
-        record.currentTime = video.currentTime;
-        record.duration = isFinite(video.duration) ? video.duration : 0;
-        if (this.onUpdateCallback) {
-          this.onUpdateCallback(record);
-        }
+        this.updateVideoState(video, config);
       }
     };
     video.addEventListener('timeupdate', handleTimeUpdate, { passive: true });
@@ -175,6 +174,7 @@ export class VideoRegistry {
     const rect = video.getBoundingClientRect();
     record.boundingRect = rect;
     record.dimensions = { width: rect.width, height: rect.height };
+    record.intersectionRatio = calculateViewportIntersectionRatio(rect);
     record.isPlaying = !video.paused && !video.ended;
     record.isMuted = video.muted || video.volume === 0;
     record.volume = video.volume;

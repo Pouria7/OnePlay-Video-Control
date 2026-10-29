@@ -1,5 +1,6 @@
 import { ResolvedConfig, SiteSettings } from '../../storage/types';
 import { VolumeState } from '../state/volume-state';
+import { PlaybackRateState } from '../state/playback-rate-state';
 import { VideoCandidateContext, VideoDetectionConfig } from '../detection/types';
 
 export type ChangeSource = 'user' | 'external';
@@ -38,6 +39,7 @@ export interface VideoAdapterContext extends VideoContext {
   readonly controllerHost: HTMLElement;
   readonly settings: SiteSettings;
   readonly volumeState: VolumeState;
+  readonly playbackRateState?: PlaybackRateState;
   /**
    * Applies site settings overrides (e.g. controlsLayout = 'minimal') to the active controller.
    */
