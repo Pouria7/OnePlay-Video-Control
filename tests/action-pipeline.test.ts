@@ -660,6 +660,11 @@ describe('YouTubeAdapter Shorts Support & Layout Override', () => {
     ctx.updateSettings({ controlsLayout: 'minimal' });
     expect(controller.ui.container.classList.contains('minimal-mode')).toBe(true);
 
+    // When global config update comes in (e.g. from storage change), runtime overrides are preserved
+    controller.updateConfig({ controlsLayout: 'full', autoHideDelay: 3000 });
+    expect(controller.ui.container.classList.contains('minimal-mode')).toBe(true);
+    expect((controller as any).config.controlsLayout).toBe('minimal');
+
     controller.destroy();
   });
 });

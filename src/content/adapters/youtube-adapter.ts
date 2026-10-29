@@ -32,12 +32,24 @@ export class YouTubeAdapter extends GenericAdapter {
     return domainMatches(url.hostname, 'youtube.com');
   }
 
-  override getConfigOverrides(_url?: URL): Partial<SiteSettings> {
+  override getConfigOverrides(url?: URL): Partial<SiteSettings> {
+    const currentUrl =
+      url ??
+      (typeof window !== 'undefined' && window.location?.href
+        ? new URL(window.location.href)
+        : undefined);
+    const isShorts = currentUrl && currentUrl.pathname.includes('/shorts');
+
+    // TODO: [REFACTOR] Ad-hoc pathname inspection here is a temporary patch to ensure Shorts
+    // defaults to minimal pill layout across storage reloads. Refactor into a generalized
+    // route/sub-pattern policy engine (e.g., adapter route matchers or site sub-path configs)
+    // rather than bespoke per-adapter pathname checks.
     return {
       minWidth: 100,
       minHeight: 60,
       visibilityThreshold: 0.2,
-      allowMultiple: false // Only one active preview at a time
+      allowMultiple: false, // Only one active preview at a time
+      ...(isShorts ? { controlsLayout: 'minimal' } : {})
     };
   }
 

@@ -72,6 +72,12 @@ export class VideoController {
   private cleanupFns: Array<() => void> = [];
   private recording: RecordingManager;
   private savedObjectFit: string | null = null;
+  // TODO: [REFACTOR] `runtimeOverrides` is a temporary mechanism to prevent broad storage reloads
+  // (e.g. storageManager.onChanged when saving playback speed) from clobbering dynamic adapter
+  // session overrides (like Shorts minimal layout).
+  // Future architecture should implement fine-grained delta-based storage dispatching (diffing changed
+  // storage keys rather than re-merging all defaults) or a formalized multi-layer config stack.
+  private runtimeOverrides: Partial<SiteSettings> = {};
 
   private onHoverCallback?: VideoHoverCallback;
 
@@ -178,6 +184,7 @@ export class VideoController {
   }
 
   updateSettings(overrides: Partial<SiteSettings>): void {
+    this.runtimeOverrides = { ...this.runtimeOverrides, ...overrides };
     this.updateConfig(overrides);
   }
 
@@ -185,6 +192,7 @@ export class VideoController {
     this.config = {
       ...this.config,
       ...newConfig,
+      ...this.runtimeOverrides,
     };
     this.applyTheme(this.config.theme);
     this.setMinimalMode(this.config.controlsLayout === 'minimal');
