@@ -14,7 +14,7 @@ import { createShadowUI, ShadowUIElements, updateControlHints } from './shadow-u
 import { PositionManager } from './position-manager';
 import { VolumeState } from './volume-state';
 import { ContextMenu } from './context-menu';
-import { ResolvedConfig } from '../../storage/types';
+import { ResolvedConfig, SiteSettings } from '../../storage/types';
 import { themeEngine } from '../../themes/theme-engine';
 import { formatTime } from '../../utils/dom';
 import { RecordingManager } from './recording-manager';
@@ -130,6 +130,16 @@ export class VideoController {
       controllerHost: this.ui.host,
       settings: this.config,
       volumeState: this.volumeState,
+      url:
+        typeof window !== 'undefined' && window.location?.href
+          ? new URL(window.location.href)
+          : new URL('http://localhost'),
+      updateSettings: (overrides: Partial<SiteSettings>) => {
+        this.updateSettings(overrides);
+      },
+      updateConfig: (newConfig: Partial<ResolvedConfig>) => {
+        this.updateConfig(newConfig);
+      },
     };
   }
 
@@ -146,15 +156,22 @@ export class VideoController {
     themeEngine.applyTheme(this.ui.container, themeId);
   }
 
-  updateConfig(newConfig: ResolvedConfig): void {
-    this.config = newConfig;
-    this.applyTheme(newConfig.theme);
-    this.setMinimalMode(newConfig.controlsLayout === 'minimal');
+  updateSettings(overrides: Partial<SiteSettings>): void {
+    this.updateConfig(overrides);
+  }
+
+  updateConfig(newConfig: Partial<ResolvedConfig>): void {
+    this.config = {
+      ...this.config,
+      ...newConfig,
+    };
+    this.applyTheme(this.config.theme);
+    this.setMinimalMode(this.config.controlsLayout === 'minimal');
     updateControlHints(this.ui, {
-      shortcuts: newConfig.shortcuts,
-      seekInterval: newConfig.seekInterval,
+      shortcuts: this.config.shortcuts,
+      seekInterval: this.config.seekInterval,
     });
-    this.positionManager.updateConfig(newConfig);
+    this.positionManager.updateConfig(this.config);
     this.contextMenu.refresh();
   }
 

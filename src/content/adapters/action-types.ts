@@ -1,16 +1,48 @@
-import { SiteSettings } from '../../storage/types';
+import { ResolvedConfig, SiteSettings } from '../../storage/types';
 import { VolumeState } from '../state/volume-state';
+import { VideoCandidateContext, VideoDetectionConfig } from '../detection/types';
 
 export type ChangeSource = 'user' | 'external';
 
 /**
- * Unified dependency context passed to all adapter lifecycle methods and action hooks.
+ * Base video element context including the current page URL.
  */
-export interface VideoAdapterContext {
+export interface VideoContext {
   readonly video: HTMLVideoElement;
+  readonly url: URL;
+}
+
+/**
+ * Backward compatibility alias for onVideoDetected.
+ */
+export type VideoDetectionContext = VideoContext;
+
+/**
+ * Context passed to filterVideo, providing the video, current URL, and optional detection config.
+ */
+export interface VideoFilterContext extends VideoContext {
+  readonly config?: VideoDetectionConfig;
+}
+
+/**
+ * Context passed to scoreVideo, providing the video, current URL, and candidate metrics.
+ */
+export interface VideoScoreContext extends VideoContext {
+  readonly candidate: VideoCandidateContext;
+}
+
+/**
+ * Unified dependency context passed to all controller lifecycle methods and action hooks.
+ */
+export interface VideoAdapterContext extends VideoContext {
   readonly controllerHost: HTMLElement;
   readonly settings: SiteSettings;
   readonly volumeState: VolumeState;
+  /**
+   * Applies site settings overrides (e.g. controlsLayout = 'minimal') to the active controller.
+   */
+  updateSettings(overrides: Partial<SiteSettings>): void;
+  updateConfig(newConfig: Partial<ResolvedConfig>): void;
 }
 
 /**

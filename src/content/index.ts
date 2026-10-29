@@ -73,8 +73,12 @@ class ContentCoordinator {
         }
       },
       {
-        filterVideo: this.activeAdapter.filterVideo ? (v) => this.activeAdapter.filterVideo!(v) : undefined,
-        scoreVideo: this.activeAdapter.scoreVideo ? (v, ctx) => this.activeAdapter.scoreVideo!(v, ctx) : undefined
+        filterVideo: this.activeAdapter.filterVideo
+          ? (v) => this.activeAdapter.filterVideo!({ video: v, url: this.currentUrl, config: this.currentConfig })
+          : undefined,
+        scoreVideo: this.activeAdapter.scoreVideo
+          ? (v, candidate) => this.activeAdapter.scoreVideo!({ video: v, url: this.currentUrl, candidate })
+          : undefined
       }
     );
 
@@ -83,7 +87,7 @@ class ContentCoordinator {
       onVideoAdded: (video) => {
         this.registry.register(video, this.currentConfig);
         if (this.activeAdapter.onVideoDetected) {
-          this.activeAdapter.onVideoDetected(video);
+          this.activeAdapter.onVideoDetected({ video, url: this.currentUrl });
         }
         this.scheduleSelection();
       },
@@ -125,8 +129,12 @@ class ContentCoordinator {
 
     if (this.registry) {
       this.registry.setHooks({
-        filterVideo: this.activeAdapter.filterVideo ? (v) => this.activeAdapter.filterVideo!(v) : undefined,
-        scoreVideo: this.activeAdapter.scoreVideo ? (v, ctx) => this.activeAdapter.scoreVideo!(v, ctx) : undefined
+        filterVideo: this.activeAdapter.filterVideo
+          ? (v) => this.activeAdapter.filterVideo!({ video: v, url: this.currentUrl, config: this.currentConfig })
+          : undefined,
+        scoreVideo: this.activeAdapter.scoreVideo
+          ? (v, candidate) => this.activeAdapter.scoreVideo!({ video: v, url: this.currentUrl, candidate })
+          : undefined
       });
       this.registry.updateAll(this.currentConfig);
     }

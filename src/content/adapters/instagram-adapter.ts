@@ -5,24 +5,29 @@
  * transparent tap-to-mute overlay wrappers, and SPA feed/reels routing.
  *
  * Implements context-driven lifecycle hooks and action interceptors (e.g. disabling fillToFit
- * on vertical reels when entering fullscreen).
+ * on vertical reels when entering fullscreen, and adapting controller layout to minimal pill mode).
  */
 
-import { SiteAdapter } from './site-adapter';
+import { GenericAdapter } from './generic-adapter';
 import { SiteSettings } from '../../storage/types';
 import { domainMatches } from '../../utils/url';
 import { VideoCandidateContext } from '../detection/types';
-import { AdapterActionHooks, VideoAdapterContext } from './action-types';
+import {
+  AdapterActionHooks,
+  VideoAdapterContext,
+  VideoFilterContext,
+  VideoScoreContext
+} from './action-types';
 
-export class InstagramAdapter implements SiteAdapter {
-  readonly id = 'instagram';
-  readonly name = 'Instagram Web Adapter';
+export class InstagramAdapter extends GenericAdapter {
+  override readonly id = 'instagram';
+  override readonly name = 'Instagram Web Adapter';
 
-  matches(url: URL): boolean {
+  override matches(url: URL): boolean {
     return domainMatches(url.hostname, 'instagram.com');
   }
 
-  getConfigOverrides(): Partial<SiteSettings> {
+  override getConfigOverrides(_url?: URL): Partial<SiteSettings> {
     return {
       minWidth: 180,
       minHeight: 180,
@@ -31,24 +36,39 @@ export class InstagramAdapter implements SiteAdapter {
     };
   }
 
-  filterVideo(video: HTMLVideoElement): boolean {
+  override filterVideo(input: VideoFilterContext | HTMLVideoElement): boolean {
+    const video = input instanceof HTMLVideoElement ? input : input.video;
     const rect = video.getBoundingClientRect();
+    // Exclude tiny story avatar circular preview videos
     return rect.width >= 140 && rect.height >= 140;
   }
 
-  scoreVideo(_video: HTMLVideoElement, context: VideoCandidateContext): number | null {
+  override scoreVideo(
+    input: VideoScoreContext | HTMLVideoElement,
+    legacyCandidate?: VideoCandidateContext
+  ): number | null {
+    const candidate = input instanceof HTMLVideoElement ? legacyCandidate : input.candidate;
     let bonus = 0;
-    if (context.isPlaying && context.intersectionRatio >= 0.65) {
+    if (candidate && candidate.isPlaying && candidate.intersectionRatio >= 0.65) {
       bonus += 150;
     }
     return bonus;
   }
 
-  onVideoActivated({ video }: VideoAdapterContext): void {
-    video.style.pointerEvents = 'auto';
+  override onVideoActivated(ctx: VideoAdapterContext): void {
+    ctx.video.style.pointerEvents = 'auto';
+
+    // On Reels, Stories, or vertical videos, set layout to minimal (pill) if controller is enabled
+    const isReelOrStory =
+      (ctx.url && (ctx.url.pathname.includes('/reel') || ctx.url.pathname.includes('/stories'))) ||
+      (ctx.video.videoHeight > 0 && ctx.video.videoHeight > ctx.video.videoWidth);
+
+    if (isReelOrStory && ctx.settings.enabled !== false) {
+      ctx.updateSettings({ controlsLayout: 'minimal' });
+    }
   }
 
-  readonly actions: AdapterActionHooks = {
+  override readonly actions: AdapterActionHooks = {
     toggleFullscreen: {
       // Keep execution fast (no long setTimeout) to preserve browser fullscreen User Gesture
       before: ({ video, payload }) => {

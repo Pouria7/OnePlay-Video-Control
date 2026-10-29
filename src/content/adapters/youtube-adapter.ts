@@ -1,32 +1,38 @@
 /**
  * YouTube Site Adapter
  *
- * Dedicated strictly to YouTube's inline preview video cards (e.g. on homepage/feed).
+ * Dedicated strictly to YouTube's inline preview video cards (e.g. on homepage/feed)
+ * and vertical Shorts reels.
  *
- * Excludes YouTube's main watch player entirely, and binds a single capture-phase
+ * Excludes YouTube's main watch player, and binds a single capture-phase
  * mouseleave event blocker directly to <ytd-video-preview> as soon as it appears,
  * preventing preview deactivation when hovering the floating controller.
  */
 
-import { SiteAdapter } from './site-adapter';
+import { GenericAdapter } from './generic-adapter';
 import { SiteSettings } from '../../storage/types';
 import { domainMatches } from '../../utils/url';
 import { VideoCandidateContext } from '../detection/types';
-import { VideoAdapterContext } from './action-types';
+import {
+  VideoAdapterContext,
+  VideoContext,
+  VideoFilterContext,
+  VideoScoreContext
+} from './action-types';
 
-export class YouTubeAdapter implements SiteAdapter {
-  readonly id = 'youtube';
-  readonly name = 'YouTube Adapter';
+export class YouTubeAdapter extends GenericAdapter {
+  override readonly id = 'youtube';
+  override readonly name = 'YouTube Adapter';
 
   // Ensures we only attach the mouseleave listener once per preview element
   private boundPreviews = new WeakSet<Element>();
   private audioInterceptors = new WeakSet<HTMLVideoElement>();
 
-  matches(url: URL): boolean {
+  override matches(url: URL): boolean {
     return domainMatches(url.hostname, 'youtube.com');
   }
 
-  getConfigOverrides(): Partial<SiteSettings> {
+  override getConfigOverrides(_url?: URL): Partial<SiteSettings> {
     return {
       minWidth: 100,
       minHeight: 60,
@@ -78,10 +84,13 @@ export class YouTubeAdapter implements SiteAdapter {
   /**
    * YouTube Candidate Filter:
    * 1. Whitelists preview video cards (inline-player, ytd-video-preview, secondary/sidebar recommendations).
-   * 2. Excludes YouTube's main watch player.
-   * 3. Excludes full-screen Shorts reels.
+   * 2. Whitelists Shorts video reels (does not exclude them).
+   * 3. Excludes YouTube's main watch player.
    */
-  filterVideo(video: HTMLVideoElement): boolean {
+  override filterVideo(input: VideoFilterContext | HTMLVideoElement): boolean {
+    const video = input instanceof HTMLVideoElement ? input : input.video;
+    const url = input instanceof HTMLVideoElement ? undefined : input.url;
+
     // 1. Explicitly ALLOW any preview player video
     const isPreview = !!video.closest(
       'ytd-video-preview, #video-preview, #inline-preview-player, ytd-player#inline-player'
@@ -94,16 +103,21 @@ export class YouTubeAdapter implements SiteAdapter {
       return true;
     }
 
-    // 2. Exclude YouTube's main watch player containers
+    // 2. Whitelist Shorts video reels (do not filter out Shorts)
+    const currentUrl =
+      url ?? (typeof window !== 'undefined' && window.location?.href ? new URL(window.location.href) : undefined);
+    const isShorts =
+      (currentUrl && currentUrl.pathname.includes('/shorts')) ||
+      !!video.closest('ytd-shorts, ytd-reel-video-renderer');
+    if (isShorts) {
+      return true;
+    }
+
+    // 3. Exclude YouTube's main watch player containers
     const isMainWatchPlayer = !!video.closest(
       'ytd-watch-flexy, ytd-watch-grid, #player-theater-container, #full-bleed-container, #primary #player, #primary #ytd-player'
     );
     if (isMainWatchPlayer) {
-      return false;
-    }
-
-    // 3. Exclude Shorts full-screen reel player
-    if (video.closest('ytd-shorts, ytd-reel-video-renderer')) {
       return false;
     }
 
@@ -116,14 +130,19 @@ export class YouTubeAdapter implements SiteAdapter {
     return true;
   }
 
-  scoreVideo(_video: HTMLVideoElement, context: VideoCandidateContext): number | null {
-    if (context.isPlaying) {
+  override scoreVideo(
+    input: VideoScoreContext | HTMLVideoElement,
+    legacyCandidate?: VideoCandidateContext
+  ): number | null {
+    const candidate = input instanceof HTMLVideoElement ? legacyCandidate : input.candidate;
+    if (candidate?.isPlaying) {
       return 300;
     }
     return 100;
   }
 
-  onVideoDetected(video: HTMLVideoElement): void {
+  override onVideoDetected(input: VideoContext | HTMLVideoElement): void {
+    const video = input instanceof HTMLVideoElement ? input : input.video;
     this.interceptVideoAudio(video);
     const preview = video.closest('ytd-video-preview') || document.querySelector('ytd-video-preview');
     if (preview) {
@@ -131,11 +150,20 @@ export class YouTubeAdapter implements SiteAdapter {
     }
   }
 
-  onVideoActivated({ video }: VideoAdapterContext): void {
+  override onVideoActivated(ctx: VideoAdapterContext): void {
+    const { video, url, settings, updateSettings } = ctx;
     this.interceptVideoAudio(video);
     const preview = video.closest('ytd-video-preview') || document.querySelector('ytd-video-preview');
     if (preview) {
       this.bindPreviewElement(preview);
+    }
+
+    // On Shorts page, if controller is active/enabled, override layout to minimal pill mode
+    const isShorts =
+      (url && url.pathname.includes('/shorts')) ||
+      !!video.closest('ytd-shorts, ytd-reel-video-renderer');
+    if (isShorts && settings.enabled !== false) {
+      updateSettings({ controlsLayout: 'minimal' });
     }
   }
 }

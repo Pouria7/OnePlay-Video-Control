@@ -1,7 +1,9 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { GuardedState } from '../src/content/state/guarded-state';
 import { VideoActionDispatcher } from '../src/content/actions/action-dispatcher';
+import { GenericAdapter } from '../src/content/adapters/generic-adapter';
 import { InstagramAdapter } from '../src/content/adapters/instagram-adapter';
+import { YouTubeAdapter } from '../src/content/adapters/youtube-adapter';
 import { VideoController } from '../src/content/controller/video-controller';
 import { ShortcutManager } from '../src/content/shortcuts/shortcut-manager';
 import { VideoAdapterContext } from '../src/content/adapters/action-types';
@@ -145,7 +147,10 @@ describe('VideoActionDispatcher', () => {
       video,
       controllerHost: host,
       settings: { enabled: true },
-      volumeState: new VolumeState(video)
+      volumeState: new VolumeState(video),
+      url: new URL('https://example.com/watch?v=123'),
+      updateSettings: vi.fn(),
+      updateConfig: vi.fn()
     };
   });
 
@@ -283,7 +288,10 @@ describe('InstagramAdapter Action Hooks', () => {
       video,
       controllerHost: host,
       settings: { enabled: true },
-      volumeState: new VolumeState(video)
+      volumeState: new VolumeState(video),
+      url: new URL('https://www.instagram.com/reels/123/'),
+      updateSettings: vi.fn(),
+      updateConfig: vi.fn()
     };
   });
 
@@ -347,6 +355,88 @@ describe('InstagramAdapter Action Hooks', () => {
     video.style.pointerEvents = 'none';
     adapter.onVideoActivated(context);
     expect(video.style.pointerEvents).toBe('auto');
+  });
+
+  it('sets controlsLayout to minimal on Reels/Stories when controller is enabled', () => {
+    adapter.onVideoActivated(context);
+    expect(context.updateSettings).toHaveBeenCalledWith({ controlsLayout: 'minimal' });
+  });
+
+  it('filters video and scores video using clean context objects or elements', () => {
+    video.getBoundingClientRect = () =>
+      ({ width: 200, height: 200, left: 0, top: 0, right: 200, bottom: 200 } as DOMRect);
+
+    // Context call
+    expect(adapter.filterVideo({ video, url: new URL('https://instagram.com/reels/1') })).toBe(true);
+
+    // Direct element call
+    expect(adapter.filterVideo(video)).toBe(true);
+
+    // Score context call
+    const score = adapter.scoreVideo({
+      video,
+      url: new URL('https://instagram.com/reels/1'),
+      candidate: {
+        isPlaying: true,
+        intersectionRatio: 0.8,
+        boundingRect: video.getBoundingClientRect(),
+        isMuted: false,
+        volume: 1
+      }
+    });
+    expect(score).toBe(150);
+  });
+});
+
+describe('GenericAdapter Universal Defaults', () => {
+  let generic: GenericAdapter;
+  let video: HTMLVideoElement;
+
+  beforeEach(() => {
+    generic = new GenericAdapter();
+    video = document.createElement('video');
+  });
+
+  it('provides sensible universal defaults', () => {
+    expect(generic.matches(new URL('https://any-site.com'))).toBe(true);
+    expect(generic.getConfigOverrides()).toEqual({});
+    expect(generic.filterVideo({ video, url: new URL('https://any-site.com') })).toBe(true);
+    expect(
+      generic.scoreVideo({
+        video,
+        url: new URL('https://any-site.com'),
+        candidate: { isPlaying: true, intersectionRatio: 1, boundingRect: {} as any, isMuted: false, volume: 1 }
+      })
+    ).toBeNull();
+  });
+
+  it('provides universal vertical video fullscreen fix (fillToFit = false)', async () => {
+    Object.defineProperty(video, 'videoWidth', { value: 600, configurable: true });
+    Object.defineProperty(video, 'videoHeight', { value: 1200, configurable: true });
+
+    const dispatcher = new VideoActionDispatcher(
+      {
+        video,
+        controllerHost: document.createElement('div'),
+        settings: { enabled: true },
+        volumeState: new VolumeState(video),
+        url: new URL('https://any-site.com'),
+        updateSettings: vi.fn(),
+        updateConfig: vi.fn()
+      },
+      generic
+    );
+
+    let capturedPayload: any = null;
+    await dispatcher.dispatchUserAction(
+      'toggleFullscreen',
+      { entering: true, fillToFit: true },
+      (payload) => {
+        capturedPayload = payload;
+      }
+    );
+
+    expect(capturedPayload.fillToFit).toBe(false);
   });
 });
 
@@ -479,5 +569,102 @@ describe('Keyboard Speed Shortcuts & Key Normalization', () => {
     expect(mockController.speedUp).toHaveBeenCalled();
 
     shortcutMgr.stop();
+  });
+});
+
+describe('YouTubeAdapter Shorts Support & Layout Override', () => {
+  let ytAdapter: YouTubeAdapter;
+
+  beforeEach(() => {
+    ytAdapter = new YouTubeAdapter();
+  });
+
+  it('allows YouTube Shorts videos in filterVideo', () => {
+    const shortsVideo = document.createElement('video');
+    const shortsContainer = document.createElement('ytd-shorts');
+    shortsContainer.appendChild(shortsVideo);
+    document.body.appendChild(shortsContainer);
+
+    expect(ytAdapter.filterVideo(shortsVideo)).toBe(true);
+
+    const shortsByUrl = document.createElement('video');
+    expect(ytAdapter.filterVideo(shortsByUrl, { url: new URL('https://www.youtube.com/shorts/abcdef123') })).toBe(true);
+
+    shortsContainer.remove();
+  });
+
+  it('excludes YouTube main watch player in filterVideo', () => {
+    const watchVideo = document.createElement('video');
+    const watchFlexy = document.createElement('ytd-watch-flexy');
+    watchFlexy.appendChild(watchVideo);
+    document.body.appendChild(watchFlexy);
+
+    expect(ytAdapter.filterVideo(watchVideo)).toBe(false);
+
+    watchFlexy.remove();
+  });
+
+  it('sets controlsLayout to minimal on Shorts page when controller is enabled', () => {
+    const video = document.createElement('video');
+    const updateSettings = vi.fn();
+
+    const ctx: VideoAdapterContext = {
+      video,
+      controllerHost: document.createElement('div'),
+      settings: { enabled: true, controlsLayout: 'full' },
+      volumeState: new VolumeState(video),
+      url: new URL('https://www.youtube.com/shorts/xyz789'),
+      updateSettings,
+      updateConfig: vi.fn()
+    };
+
+    ytAdapter.onVideoActivated(ctx);
+
+    expect(updateSettings).toHaveBeenCalledWith({ controlsLayout: 'minimal' });
+  });
+
+  it('does not override controlsLayout to minimal if controller is disabled (enabled: false)', () => {
+    const video = document.createElement('video');
+    const updateSettings = vi.fn();
+
+    const ctx: VideoAdapterContext = {
+      video,
+      controllerHost: document.createElement('div'),
+      settings: { enabled: false },
+      volumeState: new VolumeState(video),
+      url: new URL('https://www.youtube.com/shorts/xyz789'),
+      updateSettings,
+      updateConfig: vi.fn()
+    };
+
+    ytAdapter.onVideoActivated(ctx);
+
+    expect(updateSettings).not.toHaveBeenCalled();
+  });
+
+  it('VideoController updateSettings overrides layout to minimal at runtime', () => {
+    const video = document.createElement('video');
+    const controller = new VideoController('test-layout-override', video, {
+      ...DEFAULT_SHORTCUTS,
+      enabled: true,
+      theme: 'classic-dark',
+      controllerPosition: 'bottom-inside',
+      controlsLayout: 'full',
+      minWidth: 160,
+      minHeight: 120,
+      visibilityThreshold: 0.7,
+      seekInterval: 5,
+      allowMultiple: true,
+      autoHideDelay: 2200,
+      shortcuts: { ...DEFAULT_SHORTCUTS }
+    });
+
+    const ctx = controller.getAdapterContext();
+    expect(controller.ui.container.classList.contains('minimal-mode')).toBe(false);
+
+    ctx.updateSettings({ controlsLayout: 'minimal' });
+    expect(controller.ui.container.classList.contains('minimal-mode')).toBe(true);
+
+    controller.destroy();
   });
 });

@@ -4,7 +4,13 @@
 
 import { SiteSettings } from '../../storage/types';
 import { TrackedVideo, VideoCandidateContext } from '../detection/types';
-import { AdapterActionHooks, VideoAdapterContext } from './action-types';
+import {
+  AdapterActionHooks,
+  VideoAdapterContext,
+  VideoContext,
+  VideoFilterContext,
+  VideoScoreContext
+} from './action-types';
 
 export interface SiteAdapter {
   readonly id: string;
@@ -18,17 +24,17 @@ export interface SiteAdapter {
   /**
    * Provides site-specific default config overrides
    */
-  getConfigOverrides(): Partial<SiteSettings>;
+  getConfigOverrides(url?: URL): Partial<SiteSettings>;
 
   /**
    * Optional custom filter to accept or reject videos
    */
-  filterVideo?(video: HTMLVideoElement): boolean;
+  filterVideo?(ctx: VideoFilterContext | HTMLVideoElement): boolean;
 
   /**
    * Optional custom scoring modifier for videos
    */
-  scoreVideo?(video: HTMLVideoElement, context: VideoCandidateContext): number | null;
+  scoreVideo?(ctx: VideoScoreContext | HTMLVideoElement, legacyCandidate?: VideoCandidateContext): number | null;
 
   /**
    * Optional custom candidate selection logic
@@ -38,7 +44,7 @@ export interface SiteAdapter {
   /**
    * Lifecycle hooks receiving unified context
    */
-  onVideoDetected?(video: HTMLVideoElement): void;
+  onVideoDetected?(ctx: VideoContext | HTMLVideoElement): void;
   onVideoActivated?(ctx: VideoAdapterContext): void;
   onVideoDeactivated?(ctx: VideoAdapterContext): void;
 
