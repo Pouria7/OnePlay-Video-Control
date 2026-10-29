@@ -39,7 +39,7 @@ export function normalizeKey(key: string): string {
 /**
  * Parses a shortcut string like "Ctrl+Shift+KeyM" or "Space"
  */
-export function parseShortcut(shortcutStr: string): ParsedShortcut {
+export function parseShortcut(shortcutStr?: string): ParsedShortcut {
   if (!shortcutStr || !shortcutStr.trim()) {
     return { ctrl: false, alt: false, shift: false, meta: false, key: '' };
   }
@@ -72,7 +72,7 @@ export function parseShortcut(shortcutStr: string): ParsedShortcut {
 /**
  * Checks if a KeyboardEvent matches a configured shortcut string
  */
-export function matchesShortcut(e: KeyboardEvent, shortcutStr: string): boolean {
+export function matchesShortcut(e: KeyboardEvent, shortcutStr?: string): boolean {
   if (!shortcutStr) return false;
 
   const parsed = parseShortcut(shortcutStr);
@@ -118,7 +118,7 @@ export function eventToShortcutString(e: KeyboardEvent): string {
 /**
  * Formats a canonical shortcut string for UI presentation (e.g. "Ctrl + Shift + M")
  */
-export function formatShortcutForDisplay(shortcutStr: string): string {
+export function formatShortcutForDisplay(shortcutStr?: string): string {
   if (!shortcutStr) return 'None';
 
   const parsed = parseShortcut(shortcutStr);

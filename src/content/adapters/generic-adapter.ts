@@ -16,8 +16,8 @@ import {
 } from './action-types';
 
 export class GenericAdapter implements SiteAdapter {
-  readonly id = 'generic';
-  readonly name = 'Universal Generic Adapter';
+  readonly  id: string = 'generic';
+  readonly name : string= 'Universal Generic Adapter';
 
   matches(_url: URL): boolean {
     return true; // Catch-all fallback

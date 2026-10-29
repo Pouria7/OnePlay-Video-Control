@@ -46,15 +46,15 @@ const ATTR = {
   SPEED: 'data-speed',
 } as const;
 
-export type VideoHoverCallback =
-  | ((ctx: VideoAdapterContext, isHovered: boolean) => void)
-  | ((video: HTMLVideoElement, isHovered: boolean, host: HTMLElement) => void);
+export type VideoHoverCallback = (
+  ctx: VideoAdapterContext,
+  isHovered: boolean
+) => void;
 
 export class VideoController {
   readonly id: string;
   readonly video: HTMLVideoElement;
-
-  private ui: ShadowUIElements;
+  readonly ui: ShadowUIElements;
   private positionManager: PositionManager;
   private volumeState: VolumeState;
   private contextMenu: ContextMenu;
@@ -678,11 +678,7 @@ export class VideoController {
   private notifyHover(isHovered: boolean): void {
     if (!this.onHoverCallback) return;
     const ctx = this.getAdapterContext();
-    if (this.onHoverCallback.length >= 3) {
-      (this.onHoverCallback as any)(this.video, isHovered, this.ui.host);
-    } else {
-      (this.onHoverCallback as any)(ctx, isHovered);
-    }
+    this.onHoverCallback(ctx, isHovered);
   }
 
   // ─── Manual Bar Dragging ──────────────────────────────────────────────

@@ -10,7 +10,6 @@ import { VideoAdapterContext } from '../src/content/adapters/action-types';
 import { VolumeState } from '../src/content/state/volume-state';
 import { ResolvedConfig, DEFAULT_SHORTCUTS } from '../src/storage/types';
 import { normalizeKey, formatShortcutForDisplay, matchesShortcut } from '../src/utils/shortcuts';
-import { SPEED_PRESETS } from '../src/content/controller/shadow-ui';
 
 describe('GuardedState<T>', () => {
   let domValue: number;
@@ -588,7 +587,7 @@ describe('YouTubeAdapter Shorts Support & Layout Override', () => {
     expect(ytAdapter.filterVideo(shortsVideo)).toBe(true);
 
     const shortsByUrl = document.createElement('video');
-    expect(ytAdapter.filterVideo(shortsByUrl, { url: new URL('https://www.youtube.com/shorts/abcdef123') })).toBe(true);
+    expect(ytAdapter.filterVideo({ video: shortsByUrl, url: new URL('https://www.youtube.com/shorts/abcdef123') })).toBe(true);
 
     shortsContainer.remove();
   });

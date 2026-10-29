@@ -59,6 +59,6 @@ export interface ShortcutsConfig {
   volumeDown: string;
   toggleMute: string;
   toggleFullscreen: string;
-  speedDown: string;
-  speedUp: string;
+  speedDown?: string;
+  speedUp?: string;
 }

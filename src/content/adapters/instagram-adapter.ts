@@ -58,14 +58,6 @@ export class InstagramAdapter extends GenericAdapter {
   override onVideoActivated(ctx: VideoAdapterContext): void {
     ctx.video.style.pointerEvents = 'auto';
 
-    // On Reels, Stories, or vertical videos, set layout to minimal (pill) if controller is enabled
-    const isReelOrStory =
-      (ctx.url && (ctx.url.pathname.includes('/reel') || ctx.url.pathname.includes('/stories'))) ||
-      (ctx.video.videoHeight > 0 && ctx.video.videoHeight > ctx.video.videoWidth);
-
-    if (isReelOrStory && ctx.settings.enabled !== false) {
-      ctx.updateSettings({ controlsLayout: 'minimal' });
-    }
   }
 
   override readonly actions: AdapterActionHooks = {
