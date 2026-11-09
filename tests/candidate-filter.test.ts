@@ -64,6 +64,57 @@ describe('CandidateFilter', () => {
     expect(isCandidateVideo(video, config, allowFilter)).toBe(true);
   });
 
+  it('rejects videos hidden or clipped by parent overflow/carousel (intersectionRatio <= 0.05)', () => {
+    video.getBoundingClientRect = () =>
+      ({ width: 600, height: 400, left: 0, top: 0, right: 600, bottom: 400 } as DOMRect);
+
+    // Completely clipped or scrolled out of carousel view
+    expect(isCandidateVideo(video, config, undefined, { intersectionRatio: 0 })).toBe(false);
+    expect(isCandidateVideo(video, config, undefined, { intersectionRatio: 0.04 })).toBe(false);
+
+    // Visible in carousel (e.g. 50% or 100% visible)
+    expect(isCandidateVideo(video, config, undefined, { intersectionRatio: 0.5 })).toBe(true);
+  });
+
+  it('rejects videos when unclipped visible box (intersectionRect) is smaller than minimal usable dimensions', () => {
+    video.getBoundingClientRect = () =>
+      ({ width: 600, height: 400, left: 0, top: 0, right: 600, bottom: 400 } as DOMRect);
+
+    // Only a 20px sliver peeking out of a carousel border
+    const tinyIntersectionRect = {
+      width: 20,
+      height: 400,
+      left: 0,
+      top: 0,
+      right: 20,
+      bottom: 400
+    } as DOMRectReadOnly;
+
+    expect(
+      isCandidateVideo(video, config, undefined, {
+        intersectionRatio: 0.1,
+        intersectionRect: tinyIntersectionRect
+      })
+    ).toBe(false);
+
+    // Adequate visible portion inside carousel
+    const adequateIntersectionRect = {
+      width: 300,
+      height: 200,
+      left: 0,
+      top: 0,
+      right: 300,
+      bottom: 200
+    } as DOMRectReadOnly;
+
+    expect(
+      isCandidateVideo(video, config, undefined, {
+        intersectionRatio: 0.5,
+        intersectionRect: adequateIntersectionRect
+      })
+    ).toBe(true);
+  });
+
   it('YouTubeAdapter rejects oversized main players and accepts small previews', async () => {
     const { YouTubeAdapter } = await import('../src/content/adapters/youtube-adapter');
     const adapter = new YouTubeAdapter();

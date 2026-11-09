@@ -14,6 +14,7 @@ export interface VideoDetectionConfig {
 export interface VideoCandidateContext {
   intersectionRatio: number;
   boundingRect: DOMRect;
+  intersectionRect?: DOMRectReadOnly;
   isPlaying: boolean;
   isMuted: boolean;
   volume: number;
@@ -24,6 +25,7 @@ export interface TrackedVideo {
   readonly element: HTMLVideoElement;
   state: VideoLifecycleState;
   intersectionRatio: number;
+  intersectionRect?: DOMRectReadOnly;
   boundingRect: DOMRect;
   dimensions: VideoDimensions;
   isPlaying: boolean;

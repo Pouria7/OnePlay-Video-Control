@@ -41,8 +41,10 @@ export function calculateVideoScore(
   // Viewport intersection score (0 to 100)
   const visibilityScore = Math.round(context.intersectionRatio * 100);
 
-  // Rendered area score (up to 50 pts, favoring prominent video elements)
-  const area = context.boundingRect.width * context.boundingRect.height;
+  // Rendered area score (up to 50 pts, favoring prominent visible video elements)
+  const area = context.intersectionRect
+    ? context.intersectionRect.width * context.intersectionRect.height
+    : context.boundingRect.width * context.boundingRect.height;
   const dimensionScore = Math.min(50, Math.round(area / 10000));
 
   // Site adapter bonus/override

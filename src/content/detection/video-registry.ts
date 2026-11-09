@@ -134,8 +134,11 @@ export class VideoRegistry {
     cleanupFns.push(() => video.removeEventListener('timeupdate', handleTimeUpdate));
 
     // Intersection observer
-    intersectionTracker.observe(video, (ratio) => {
+    intersectionTracker.observe(video, (ratio, entry) => {
       record.intersectionRatio = ratio;
+      if (entry?.intersectionRect) {
+        record.intersectionRect = entry.intersectionRect;
+      }
       this.updateVideoState(video, config);
     });
     cleanupFns.push(() => intersectionTracker.unobserve(video));
@@ -174,7 +177,19 @@ export class VideoRegistry {
     const rect = video.getBoundingClientRect();
     record.boundingRect = rect;
     record.dimensions = { width: rect.width, height: rect.height };
-    record.intersectionRatio = calculateViewportIntersectionRatio(rect);
+
+    // Get true intersection ratio from IntersectionObserver if available (handles parent overflow:hidden & carousels)
+    const observerRatio = intersectionTracker.getRatio(video);
+    if (observerRatio !== undefined) {
+      record.intersectionRatio = observerRatio;
+      const iRect = intersectionTracker.getIntersectionRect(video);
+      if (iRect) {
+        record.intersectionRect = iRect;
+      }
+    } else {
+      record.intersectionRatio = calculateViewportIntersectionRatio(rect);
+    }
+
     record.isPlaying = !video.paused && !video.ended;
     record.isMuted = video.muted || video.volume === 0;
     record.volume = video.volume;
@@ -184,7 +199,10 @@ export class VideoRegistry {
     record.lastUpdated = Date.now();
 
     const activeFilter = this.customFilter;
-    const isCandidate = isCandidateVideo(video, config, activeFilter);
+    const isCandidate = isCandidateVideo(video, config, activeFilter, {
+      intersectionRatio: record.intersectionRatio,
+      intersectionRect: record.intersectionRect
+    });
 
     if (isCandidate) {
       if (record.state !== VideoLifecycleState.ACTIVE) {
@@ -195,6 +213,7 @@ export class VideoRegistry {
         {
           intersectionRatio: record.intersectionRatio,
           boundingRect: record.boundingRect,
+          intersectionRect: record.intersectionRect,
           isPlaying: record.isPlaying,
           isMuted: record.isMuted,
           volume: record.volume
