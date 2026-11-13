@@ -91,6 +91,16 @@ export class YouTubeAdapter extends GenericAdapter {
       },
       true
     );
+
+    if (element.parentElement) {
+      element.parentElement.addEventListener(
+        'mouseleave',
+        (e) => {
+          e.stopImmediatePropagation();
+        },
+        true
+      );
+    }
   }
 
   /**
